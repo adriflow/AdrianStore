@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductType } from '../product-type.enum';
 import { CurrencyType } from '../currency-type.enum';
+import { ProvinceType } from '../province.enum';
 
 export class ProductResponseDto {
   @ApiProperty({ example: '01H5J8KZ0A9B2C3D4E5F6G7H8I' })
@@ -32,4 +33,7 @@ export class ProductResponseDto {
 
   @ApiProperty({ enum: ProductType, example: ProductType.TECNOLOGIA })
   type!: ProductType;
+
+  @ApiProperty({ enum: ProvinceType, example: ProvinceType.CAMAGUEY })
+  province!: ProvinceType;
 }

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,7 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -26,16 +25,11 @@ import { ProductType } from './product-type.enum';
 import { CurrencyType } from './currency-type.enum';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
+import { saveImages, MAX_FILE_SIZE, MAX_FILES } from '../security/uploads';
 
 const uploadPath = join(process.cwd(), 'uploads');
 if (!existsSync(uploadPath)) {
   mkdirSync(uploadPath, { recursive: true });
-}
-
-function fileName(req: any, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) {
-  const fileExtension = file.originalname.split('.').pop();
-  const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-  callback(null, `${safeName}.${fileExtension}`);
 }
 
 @Controller('api/products')
@@ -54,17 +48,8 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     AnyFilesInterceptor({
-      storage: diskStorage({
-        destination: uploadPath,
-        filename: fileName,
-      }),
-      fileFilter: (req, file, callback) => {
-        const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!allowed.includes(file.mimetype)) {
-          return callback(new BadRequestException('Solo se permiten imágenes PNG, JPG o WebP'), false);
-        }
-        callback(null, true);
-      },
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
     }),
   )
   @ApiConsumes('multipart/form-data')
@@ -89,9 +74,9 @@ export class ProductController {
   })
   @ApiOperation({ summary: 'Crear un producto nuevo' })
   @ApiResponse({ status: 201, description: 'Producto creado correctamente.', type: ProductResponseDto })
-  create(@UploadedFiles() images: Express.Multer.File[], @Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
+  async create(@UploadedFiles() images: Express.Multer.File[], @Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const imageUrls = (images || []).map((file) => `${backendUrl}/uploads/${file.filename}`);
+    const imageUrls = await saveImages(images || [], uploadPath, backendUrl);
     const imageUrl = imageUrls[0] || '';
     return this.productService.create({ ...createProductDto, imageUrl, imageUrls });
   }
@@ -100,17 +85,8 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     AnyFilesInterceptor({
-      storage: diskStorage({
-        destination: uploadPath,
-        filename: fileName,
-      }),
-      fileFilter: (req, file, callback) => {
-        const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!allowed.includes(file.mimetype)) {
-          return callback(new BadRequestException('Solo se permiten imágenes PNG, JPG o WebP'), false);
-        }
-        callback(null, true);
-      },
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
     }),
   )
   @ApiConsumes('multipart/form-data')
@@ -134,13 +110,13 @@ export class ProductController {
   })
   @ApiOperation({ summary: 'Actualizar un producto existente' })
   @ApiResponse({ status: 200, description: 'Producto actualizado correctamente.', type: ProductResponseDto })
-  update(
+  async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @UploadedFiles() images: Express.Multer.File[],
     @Body() updateProductDto: UpdateProductDto,
   ): Promise<ProductResponseDto> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const imageUrls = (images || []).map((file) => `${backendUrl}/uploads/${file.filename}`);
+    const imageUrls = await saveImages(images || [], uploadPath, backendUrl);
     const imageUrl = imageUrls[0];
     return this.productService.update(id, { ...updateProductDto, imageUrl, imageUrls });
   }

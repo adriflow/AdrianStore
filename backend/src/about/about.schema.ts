@@ -15,9 +15,11 @@ export const about = useSqlite
       id: sqliteText('id').primaryKey(),
       content: sqliteText('content').notNull().default(''),
       updatedAt: sqliteText('updated_at').notNull().default(''),
+      imageUrl: sqliteText('image_url').notNull().default(''),
     })
   : pgTable('about', {
       id: pgVarchar('id').primaryKey(),
       content: pgText('content').notNull().default(''),
       updatedAt: pgVarchar('updated_at', { length: 50 }).notNull().default(''),
+      imageUrl: pgText('image_url').notNull().default(''),
     });

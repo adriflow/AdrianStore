@@ -1,12 +1,23 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { Body, Controller, Get, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { IsString, MaxLength } from 'class-validator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { AboutService } from './about.service';
+import { saveImages, MAX_FILE_SIZE } from '../security/uploads';
+
+const uploadPath = join(process.cwd(), 'uploads');
+if (!existsSync(uploadPath)) {
+  mkdirSync(uploadPath, { recursive: true });
+}
 
 class UpdateAboutDto {
   @IsString()
+  @MaxLength(10000)
   content!: string;
 }
 
@@ -17,16 +28,37 @@ export class AboutController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener el contenido de "Sobre mí"' })
-  @ApiResponse({ status: 200, description: 'Contenido de "Sobre mí"', schema: { example: { content: 'Hola, soy Adrián...', updatedAt: '2026-01-01T00:00:00.000Z' } } })
-  getAbout(): Promise<{ content: string; updatedAt: string }> {
+  @ApiResponse({ status: 200, description: 'Contenido de "Sobre mí"', schema: { example: { content: 'Hola, soy Adrián...', updatedAt: '2026-01-01T00:00:00.000Z', imageUrl: 'https://...' } } })
+  getAbout(): Promise<{ content: string; updatedAt: string; imageUrl?: string }> {
     return this.aboutService.getAbout();
   }
 
   @Put()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Actualizar el contenido de "Sobre mí" (solo admin)' })
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_FILE_SIZE, files: 1 },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string' },
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Actualizar el contenido y la foto de "Sobre mí" (solo admin)' })
   @ApiResponse({ status: 200, description: 'Contenido actualizado' })
-  updateAbout(@Body() dto: UpdateAboutDto): Promise<{ content: string; updatedAt: string }> {
-    return this.aboutService.updateAbout(dto.content);
+  async updateAbout(
+    @Body() dto: UpdateAboutDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ): Promise<{ content: string; updatedAt: string; imageUrl?: string }> {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const imageUrl = image ? (await saveImages([image], uploadPath, backendUrl))[0] : undefined;
+    return this.aboutService.updateAbout(dto.content, imageUrl);
   }
 }

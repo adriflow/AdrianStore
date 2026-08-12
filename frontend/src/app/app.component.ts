@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { NgForm } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Product, ProductService } from './product.service';
 
 interface CatalogOption {
@@ -39,6 +40,7 @@ export class AppComponent implements OnInit, OnDestroy {
   priceBounds = { min: 0, max: 0 };
   minPrice = 0;
   maxPrice = 0;
+  selectedProvince = 'all';
 
   adminUsername = 'admin';
   adminPassword = 'admin123';
@@ -65,6 +67,25 @@ export class AppComponent implements OnInit, OnDestroy {
     { value: 'ZELLE', label: 'ZELLE' },
   ];
 
+  provinceOptions: CatalogOption[] = [
+    { value: 'Pinar del Río', label: 'Pinar del Río' },
+    { value: 'Artemisa', label: 'Artemisa' },
+    { value: 'La Habana', label: 'La Habana' },
+    { value: 'Mayabeque', label: 'Mayabeque' },
+    { value: 'Matanzas', label: 'Matanzas' },
+    { value: 'Cienfuegos', label: 'Cienfuegos' },
+    { value: 'Villa Clara', label: 'Villa Clara' },
+    { value: 'Sancti Spíritus', label: 'Sancti Spíritus' },
+    { value: 'Ciego de Ávila', label: 'Ciego de Ávila' },
+    { value: 'Camagüey', label: 'Camagüey' },
+    { value: 'Las Tunas', label: 'Las Tunas' },
+    { value: 'Holguín', label: 'Holguín' },
+    { value: 'Granma', label: 'Granma' },
+    { value: 'Santiago de Cuba', label: 'Santiago de Cuba' },
+    { value: 'Guantánamo', label: 'Guantánamo' },
+    { value: 'Isla de la Juventud', label: 'Isla de la Juventud' },
+  ];
+
   model: Product = {
     name: '',
     description: '',
@@ -75,6 +96,7 @@ export class AppComponent implements OnInit, OnDestroy {
     type: 'otros',
     currency: 'CUP',
     acceptsTransfer: true,
+    province: 'Camagüey',
   };
 
   selectedImageFiles: File[] = [];
@@ -87,47 +109,40 @@ export class AppComponent implements OnInit, OnDestroy {
   menuOpen = false;
   private observer?: IntersectionObserver;
 
-  categoryCards: { value: string; label: string; gradient: string; icon: string }[] = [
+  categoryCards: { value: string; label: string; icon: string }[] = [
     {
       value: 'tecnologia',
       label: 'Tecnología',
-      gradient: 'from-sky-500 to-indigo-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>',
     },
     {
       value: 'ropa',
       label: 'Ropa',
-      gradient: 'from-rose-500 to-pink-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>',
     },
     {
       value: 'alimentos',
       label: 'Alimentos',
-      gradient: 'from-amber-500 to-orange-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>',
     },
     {
       value: 'hogar',
       label: 'Hogar',
-      gradient: 'from-teal-500 to-emerald-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l4 10H4L8 2z"/><path d="M12 12v6"/><path d="M8 22v-2c0-1.1.9-2 2-2h4a2 2 0 0 1 2 2v2H8z"/></svg>',
     },
     {
       value: 'electrodomesticos',
       label: 'Electrodomésticos',
-      gradient: 'from-cyan-500 to-blue-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6Z"/><path d="M5 10h14"/><path d="M15 7v6"/></svg>',
     },
     {
       value: 'deportes',
       label: 'Deportes',
-      gradient: 'from-violet-500 to-purple-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>',
     },
     {
       value: 'otros',
       label: 'Otros',
-      gradient: 'from-neutral-500 to-stone-600',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
     },
   ];
@@ -135,8 +150,11 @@ export class AppComponent implements OnInit, OnDestroy {
   aboutContent = '';
   aboutUpdatedAt = '';
   editAboutContent = '';
+  aboutImageUrl = '';
+  aboutImageFile?: File;
+  aboutImagePreview = '';
 
-  constructor(private productService: ProductService) {}
+  constructor(private productService: ProductService, private sanitizer: DomSanitizer) {}
 
   ngOnInit(): void {
     this.restoreLock();
@@ -178,7 +196,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.menuOpen = false;
   }
 
-  get featuredProducts(): Product[] {
+  get recentProducts(): Product[] {
     return this.products.slice(0, 6);
   }
 
@@ -200,6 +218,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   iconForCategory(value: string): string {
     return this.categoryCards.find((card) => card.value === value)?.icon ?? '';
+  }
+
+  // Los iconos son SVG estáticos de nuestro código: se marcan como HTML de confianza
+  // para que Angular no los elimine (el sanitizador por defecto descarta <svg>).
+  safeIcon(icon: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(icon);
   }
 
   initRevealObserver(): void {
@@ -379,7 +403,27 @@ export class AppComponent implements OnInit, OnDestroy {
       const price = Number(product.price) || 0;
       return price >= this.minPrice && price <= this.maxPrice;
     };
-    this.filteredProducts = this.products.filter((product) => inCategory(product) && inPrice(product));
+    const inProvince = (product: Product) =>
+      this.selectedProvince === 'all' || (product.province || 'Camagüey') === this.selectedProvince;
+    this.filteredProducts = this.products.filter((product) => inCategory(product) && inPrice(product) && inProvince(product));
+  }
+
+  get availableProvinces(): CatalogOption[] {
+    const seen = new Set<string>();
+    const result: CatalogOption[] = [];
+    for (const product of this.products) {
+      const province = product.province?.trim();
+      if (province && !seen.has(province)) {
+        seen.add(province);
+        result.push({ value: province, label: province });
+      }
+    }
+    return result.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  }
+
+  selectProvince(province: string): void {
+    this.selectedProvince = province;
+    this.applyFilter();
   }
 
   updatePriceBounds(): void {
@@ -587,6 +631,7 @@ export class AppComponent implements OnInit, OnDestroy {
     formData.append('type', this.model.type || 'otros');
     formData.append('currency', this.model.currency || 'CUP');
     formData.append('acceptsTransfer', this.model.acceptsTransfer ? 'true' : 'false');
+    formData.append('province', this.model.province || 'Camagüey');
     if (this.model.whatsapp) {
       formData.append('whatsapp', this.model.whatsapp);
     }
@@ -610,7 +655,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.editProductId = product.id ?? null;
-    this.model = { ...product };
+    this.model = { ...product, province: product.province || 'Camagüey' };
     this.imagePreviews = this.productImages(product);
   }
 
@@ -626,6 +671,7 @@ export class AppComponent implements OnInit, OnDestroy {
       type: 'otros',
       currency: 'CUP',
       acceptsTransfer: true,
+      province: 'Camagüey',
     };
     this.selectedImageFiles = [];
     this.imagePreviews = [];
@@ -647,6 +693,7 @@ export class AppComponent implements OnInit, OnDestroy {
     formData.append('type', this.model.type || 'otros');
     formData.append('currency', this.model.currency || 'CUP');
     formData.append('acceptsTransfer', this.model.acceptsTransfer ? 'true' : 'false');
+    formData.append('province', this.model.province || 'Camagüey');
     if (this.model.whatsapp) {
       formData.append('whatsapp', this.model.whatsapp);
     }
@@ -692,10 +739,11 @@ export class AppComponent implements OnInit, OnDestroy {
       type: 'otros',
       currency: 'CUP',
       acceptsTransfer: true,
+      province: 'Camagüey',
     };
     this.selectedImageFiles = [];
     this.imagePreviews = [];
-    form.resetForm({ type: 'otros', currency: 'CUP' });
+    form.resetForm({ type: 'otros', currency: 'CUP', province: 'Camagüey' });
   }
 
   whatsappLink(product: Product): string {
@@ -711,6 +759,7 @@ export class AppComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.aboutContent = res.content || '';
         this.aboutUpdatedAt = res.updatedAt || '';
+        this.aboutImageUrl = res.imageUrl || '';
         this.editAboutContent = this.aboutContent;
       },
       error: () => {
@@ -719,12 +768,35 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  onAboutImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      this.aboutImageFile = file;
+      if (this.aboutImagePreview) {
+        URL.revokeObjectURL(this.aboutImagePreview);
+      }
+      this.aboutImagePreview = URL.createObjectURL(file);
+    }
+  }
+
   saveAbout(): void {
-    this.productService.updateAbout(this.editAboutContent).subscribe({
+    const formData = new FormData();
+    formData.append('content', this.editAboutContent);
+    if (this.aboutImageFile) {
+      formData.append('image', this.aboutImageFile);
+    }
+    this.productService.updateAbout(formData).subscribe({
       next: (res) => {
         this.aboutContent = res.content;
         this.aboutUpdatedAt = res.updatedAt;
+        this.aboutImageUrl = res.imageUrl || this.aboutImageUrl;
         this.editAboutContent = res.content;
+        if (this.aboutImagePreview) {
+          URL.revokeObjectURL(this.aboutImagePreview);
+        }
+        this.aboutImageFile = undefined;
+        this.aboutImagePreview = '';
       },
       error: () => {
         // Ignore

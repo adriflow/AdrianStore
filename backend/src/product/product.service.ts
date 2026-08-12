@@ -11,6 +11,8 @@ import { Product } from './product.entity';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { CurrencyType } from './currency-type.enum';
 import { ProductType } from './product-type.enum';
+import { ProvinceType } from './province.enum';
+import { sanitizeText, sanitizePhone } from '../security/sanitize';
 
 function generateUuidV7(): string {
   const timestampMs = BigInt(Date.now());
@@ -71,6 +73,7 @@ export class ProductService {
       acceptsTransfer: (product as any).acceptsTransfer ?? true,
       whatsapp: product.whatsapp || '',
       type: (product.type || 'otros') as ProductType,
+      province: ((product as any).province || ProvinceType.CAMAGUEY) as ProvinceType,
     };
   }
 
@@ -78,9 +81,13 @@ export class ProductService {
     const newProduct = {
       id: generateUuidV7(),
       ...createProductDto,
+      name: sanitizeText(createProductDto.name, 120),
+      description: sanitizeText(createProductDto.description, 2000),
+      whatsapp: sanitizePhone(createProductDto.whatsapp),
       price: createProductDto.price.toString(),
       currency: createProductDto.currency || CurrencyType.CUP,
       acceptsTransfer: createProductDto.acceptsTransfer ?? true,
+      province: createProductDto.province || ProvinceType.CAMAGUEY,
       imageUrls: JSON.stringify(createProductDto.imageUrls || (createProductDto.imageUrl ? [createProductDto.imageUrl] : [])),
     };
 
@@ -111,16 +118,16 @@ export class ProductService {
     const updateData: Partial<Product> = {};
 
     if (updateProductDto.name !== undefined) {
-      updateData.name = updateProductDto.name;
+      updateData.name = sanitizeText(updateProductDto.name, 120);
     }
     if (updateProductDto.description !== undefined) {
-      updateData.description = updateProductDto.description;
+      updateData.description = sanitizeText(updateProductDto.description, 2000);
     }
     if (updateProductDto.price !== undefined) {
       updateData.price = updateProductDto.price.toString();
     }
     if (updateProductDto.whatsapp !== undefined) {
-      updateData.whatsapp = updateProductDto.whatsapp;
+      updateData.whatsapp = sanitizePhone(updateProductDto.whatsapp);
     }
     if (updateProductDto.type !== undefined) {
       updateData.type = updateProductDto.type;
@@ -130,6 +137,9 @@ export class ProductService {
     }
     if (updateProductDto.acceptsTransfer !== undefined) {
       updateData.acceptsTransfer = updateProductDto.acceptsTransfer;
+    }
+    if (updateProductDto.province !== undefined) {
+      updateData.province = updateProductDto.province;
     }
 
     const nextImageUrl = updateProductDto.imageUrl ?? existingProduct.imageUrl;

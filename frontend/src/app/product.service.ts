@@ -14,10 +14,17 @@ export interface Product {
   type?: string;
   currency?: string;
   acceptsTransfer?: boolean;
+  province?: string;
 }
 
 export interface AdminLoginResponse {
   token: string;
+}
+
+export interface AboutInfo {
+  content: string;
+  updatedAt: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -65,12 +72,12 @@ export class ProductService {
   }
 
   /** Get the "Sobre mí" content (public) */
-  getAbout(): Observable<{ content: string; updatedAt: string }> {
-    return this.http.get<{ content: string; updatedAt: string }>(this.aboutUrl);
+  getAbout(): Observable<AboutInfo> {
+    return this.http.get<AboutInfo>(this.aboutUrl);
   }
 
-  /** Update the "Sobre mí" content (admin) */
-  updateAbout(content: string): Observable<{ content: string; updatedAt: string }> {
-    return this.http.put<{ content: string; updatedAt: string }>(this.aboutUrl, { content }, { withCredentials: true });
+  /** Update the "Sobre mí" content and photo (admin) */
+  updateAbout(formData: FormData): Observable<AboutInfo> {
+    return this.http.put<AboutInfo>(this.aboutUrl, formData, { withCredentials: true });
   }
 }

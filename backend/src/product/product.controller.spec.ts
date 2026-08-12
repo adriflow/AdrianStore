@@ -14,6 +14,12 @@ describe('ProductController (e2e)', () => {
   let createdId: string;
   let adminToken: string;
 
+  // PNG válido 1x1 (bytes mágicos reales)
+  const realPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -64,12 +70,40 @@ describe('ProductController (e2e)', () => {
       .field('description', 'Descripción de prueba')
       .field('price', '199.99')
       .field('type', ProductType.TECNOLOGIA)
-      .attach('image', Buffer.from('test'), 'test.png')
+      .attach('image', realPng, 'test.png')
       .expect(201);
 
     expect(response.body.id).toBeDefined();
     expect(response.body.name).toBe('Prueba Creación');
     createdId = response.body.id;
+  });
+
+  it('debe rechazar archivos que no sean imágenes reales', async () => {
+    await request(app.getHttpServer())
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .field('name', 'Prueba Archivo Falso')
+      .field('price', '10')
+      .attach('image', Buffer.from('falso contenido, no es una imagen'), 'fake.png')
+      .expect(400);
+  });
+
+  it('debe eliminar HTML de nombre y descripción (anti-XSS)', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .field('name', '<script>alert(1)</script>iPhone')
+      .field('description', 'Desc <b>segura</b>')
+      .field('price', '99.99')
+      .expect(201);
+
+    expect(response.body.name).toBe('iPhone');
+    expect(response.body.description).toBe('Desc segura');
+
+    await request(app.getHttpServer())
+      .delete(`/api/products/${response.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
   });
 
   it('debe listar productos', async () => {

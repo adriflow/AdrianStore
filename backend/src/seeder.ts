@@ -5,10 +5,9 @@ import { eq } from 'drizzle-orm';
 import { products } from './product/product.schema';
 import { ProductType } from './product/product-type.enum';
 import { CurrencyType } from './product/currency-type.enum';
+import { ProvinceType } from './product/province.enum';
 import { v4 as uuidv4 } from 'uuid';
-import { users } from './users/user.schema';
 import { about } from './about/about.schema';
-import * as bcrypt from 'bcrypt';
 import { initializeDatabase } from './db';
 
 async function run() {
@@ -29,6 +28,7 @@ async function run() {
       imageUrls: '["https://picsum.photos/seed/audifonos/800/600","https://picsum.photos/seed/audifonos2/800/600"]',
       whatsapp: '59028922',
       type: ProductType.TECNOLOGIA,
+      province: ProvinceType.CAMAGUEY,
       currency: CurrencyType.USD,
       acceptsTransfer: true,
     },
@@ -41,6 +41,7 @@ async function run() {
       imageUrls: '["https://picsum.photos/seed/cafetera/800/600","https://picsum.photos/seed/cafetera2/800/600","https://picsum.photos/seed/cafetera3/800/600"]',
       whatsapp: '59028922',
       type: ProductType.ALIMENTOS,
+      province: ProvinceType.LA_HABANA,
       currency: CurrencyType.CUP,
       acceptsTransfer: false,
     },
@@ -53,6 +54,7 @@ async function run() {
       imageUrls: '["https://picsum.photos/seed/playera/800/600","https://picsum.photos/seed/playera2/800/600"]',
       whatsapp: '59028922',
       type: ProductType.ROPA,
+      province: ProvinceType.SANTIAGO_DE_CUBA,
       currency: CurrencyType.CUP,
       acceptsTransfer: true,
     },
@@ -65,6 +67,7 @@ async function run() {
       imageUrls: '["https://picsum.photos/seed/lampara/800/600","https://picsum.photos/seed/lampara2/800/600","https://picsum.photos/seed/lampara3/800/600"]',
       whatsapp: '59028922',
       type: ProductType.OTROS,
+      province: ProvinceType.HOLGUIN,
       currency: CurrencyType.ZELLE,
       acceptsTransfer: true,
     },
@@ -77,13 +80,7 @@ async function run() {
     await db.insert(products).values(p);
   }
   console.log('Seed completado con productos iniciales.');
-  // Crear admin si no existe
-  const existing = await db.select().from(users).where(eq(users.username, 'admin123')).limit(1);
-  if (!existing || existing.length === 0) {
-    const password_hash = await bcrypt.hash('admin123', 10);
-    await db.insert(users).values({ id: uuidv4(), username: 'admin123', password_hash, role: 'admin' });
-    console.log('Usuario admin creado.');
-  }
+  console.log('El usuario administrador se gestiona con: npm run setup:admin');
 
   // Crear contenido "Sobre mí" si no existe
   const aboutRows = await db.select().from(about).where(eq(about.id, 'about')).limit(1);

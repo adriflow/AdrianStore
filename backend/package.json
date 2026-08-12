@@ -6,8 +6,10 @@
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.build.json",
-    "test": "cross-env NODE_ENV=test jest --runInBand",
-    "seed": "ts-node src/seeder.ts"
+    "test": "cross-env NODE_ENV=test JWT_SECRET=test-secret-key THROTTLE_LIMIT=100000 THROTTLE_TTL=1 LOGIN_THROTTLE_LIMIT=100000 LOGIN_THROTTLE_TTL=1 jest --runInBand",
+    "seed": "ts-node src/seeder.ts",
+    "clean": "ts-node src/clean-db.ts",
+    "setup:admin": "ts-node src/setup-admin.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.0",

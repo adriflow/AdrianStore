@@ -1,0 +1,23 @@
+[Unit]
+Description=AdrianStore Backend (NestJS)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=adrianstore
+Group=adrianstore
+WorkingDirectory=/opt/adrianstore/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/adrianstore/backend/.env
+ExecStart=/usr/bin/node /opt/adrianstore/backend/dist/main.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/adrianstore/backend/uploads
+
+[Install]
+WantedBy=multi-user.target

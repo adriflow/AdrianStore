@@ -39,7 +39,8 @@ async function initializeDatabase() {
         type TEXT NOT NULL DEFAULT 'otros',
         currency TEXT NOT NULL DEFAULT 'CUP',
         accepts_transfer INTEGER NOT NULL DEFAULT 1,
-        image_urls TEXT NOT NULL DEFAULT '[]'
+        image_urls TEXT NOT NULL DEFAULT '[]',
+        province TEXT NOT NULL DEFAULT 'Camagüey'
       );
     `);
     await db.run(`
@@ -54,7 +55,8 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS about (
         id TEXT PRIMARY KEY,
         content TEXT NOT NULL DEFAULT '',
-        updated_at TEXT NOT NULL DEFAULT ''
+        updated_at TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL DEFAULT ''
       );
     `);
 
@@ -81,7 +83,8 @@ async function initializeDatabase() {
       type VARCHAR(50) DEFAULT 'otros',
       currency VARCHAR(10) NOT NULL DEFAULT 'CUP',
       accepts_transfer BOOLEAN NOT NULL DEFAULT TRUE,
-      image_urls TEXT NOT NULL DEFAULT '[]'
+      image_urls TEXT NOT NULL DEFAULT '[]',
+      province VARCHAR(50) NOT NULL DEFAULT 'Camagüey'
     );
   `);
   await pool.query(`
@@ -92,6 +95,12 @@ async function initializeDatabase() {
   `);
   await pool.query(`
     ALTER TABLE products ADD COLUMN IF NOT EXISTS image_urls TEXT NOT NULL DEFAULT '[]';
+  `);
+  await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS province VARCHAR(50) NOT NULL DEFAULT 'Camagüey';
+  `);
+  await pool.query(`
+    UPDATE products SET province = 'Camagüey' WHERE province IS NULL OR province = '';
   `);
   await pool.query(`
     UPDATE products SET image_urls = '["' || image_url || '"]'
@@ -109,8 +118,12 @@ async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS about (
       id VARCHAR PRIMARY KEY,
       content TEXT NOT NULL DEFAULT '',
-      updated_at VARCHAR(50) NOT NULL DEFAULT ''
+      updated_at VARCHAR(50) NOT NULL DEFAULT '',
+      image_url TEXT NOT NULL DEFAULT ''
     );
+  `);
+  await pool.query(`
+    ALTER TABLE about ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT '';
   `);
 
   db = drizzlePg(pool);

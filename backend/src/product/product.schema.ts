@@ -33,6 +33,7 @@ export const products = useSqlite
       currency: sqliteText('currency').default('CUP').notNull(),
       acceptsTransfer: sqliteInteger('accepts_transfer', { mode: 'boolean' }).default(true).notNull(),
       imageUrls: sqliteText('image_urls').default('[]').notNull(),
+      province: sqliteText('province').default('Camagüey').notNull(),
     })
   : pgTable('products', {
       id: pgVarchar('id').primaryKey(),
@@ -45,4 +46,5 @@ export const products = useSqlite
       currency: pgVarchar('currency', { length: 10 }).default('CUP').notNull(),
       acceptsTransfer: pgBoolean('accepts_transfer').default(true).notNull(),
       imageUrls: pgText('image_urls').default('[]').notNull(),
+      province: pgVarchar('province', { length: 50 }).default('Camagüey').notNull(),
     });

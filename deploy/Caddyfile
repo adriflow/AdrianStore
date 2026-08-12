@@ -1,0 +1,20 @@
+adrianstore.com {
+	encode gzip
+
+	root * /opt/adrianstore/frontend/dist/adrianstore-frontend
+	try_files {path} /index.html
+
+	reverse_proxy /api/* localhost:3000
+	reverse_proxy /uploads/* localhost:3000
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), camera=(), microphone=()"
+		X-Frame-Options "DENY"
+	}
+
+	log {
+		output file /var/log/caddy/adrianstore.log
+	}
+}

@@ -31,6 +31,9 @@ export class AuthService {
   async registerAdmin(username: string, password: string): Promise<void> {
     const existing = await this.usersService.findByUsername(username);
     if (existing) return;
+    if (typeof password !== 'string' || password.length < 8 || password.length > 72) {
+      throw new Error('La contraseña del administrador debe tener entre 8 y 72 caracteres');
+    }
     const password_hash = await bcrypt.hash(password, 10);
     await this.usersService.createUser({ username, password_hash, role: 'admin' });
   }

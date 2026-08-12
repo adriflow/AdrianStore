@@ -1,20 +1,25 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './product/product.module';
 import { AboutModule } from './about/about.module';
+
+const throttleLimit = parseInt(process.env.THROTTLE_LIMIT || '20', 10);
+const throttleTtl = parseInt(process.env.THROTTLE_TTL || '60000', 10);
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,
-        limit: 20,
+        ttl: throttleTtl,
+        limit: throttleLimit,
       },
     ]),
     AuthModule,
     ProductModule,
     AboutModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

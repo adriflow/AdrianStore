@@ -7,12 +7,13 @@ import { RolesGuard } from './roles.guard';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
+import { requireEnv } from '../security/env';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'defaultSecretKey',
+      secret: requireEnv('JWT_SECRET'),
       signOptions: { expiresIn: '1h' },
     }),
     UsersModule,
