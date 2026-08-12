@@ -1,0 +1,841 @@
+<div class="flex min-h-screen flex-col bg-cream text-neutral-800">
+  <!-- ===== NAVBAR ===== -->
+  <header class="sticky top-0 z-50 border-b border-neutral-900/5 bg-white/80 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" (click)="selectView('inicio')" class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="Logo AdrianStore" class="h-9 w-9 rounded-xl object-contain" />
+        <span class="text-left">
+          <span class="block font-display text-base font-bold leading-tight text-neutral-900">AdrianStore</span>
+          <span class="block text-[11px] leading-tight text-neutral-400">Catálogo en línea</span>
+        </span>
+      </button>
+
+      <nav class="hidden items-center gap-1 md:flex">
+        <button
+          type="button"
+          (click)="selectView('inicio')"
+          class="rounded-full px-4 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-100]="activeView === 'inicio'"
+          [class.text-leaf-800]="activeView === 'inicio'"
+          [class.text-neutral-500]="activeView !== 'inicio'"
+          [class.hover:text-neutral-900]="activeView !== 'inicio'"
+        >
+          Inicio
+        </button>
+        <button
+          type="button"
+          (click)="selectView('catalogo')"
+          class="rounded-full px-4 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-100]="activeView === 'catalogo'"
+          [class.text-leaf-800]="activeView === 'catalogo'"
+          [class.text-neutral-500]="activeView !== 'catalogo'"
+          [class.hover:text-neutral-900]="activeView !== 'catalogo'"
+        >
+          Catálogo
+        </button>
+        <button
+          type="button"
+          (click)="selectView('sobre-mi')"
+          class="rounded-full px-4 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-100]="activeView === 'sobre-mi'"
+          [class.text-leaf-800]="activeView === 'sobre-mi'"
+          [class.text-neutral-500]="activeView !== 'sobre-mi'"
+          [class.hover:text-neutral-900]="activeView !== 'sobre-mi'"
+        >
+          Sobre mí
+        </button>
+        <button
+          type="button"
+          (click)="selectView('admin')"
+          class="rounded-full px-4 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-100]="activeView === 'admin'"
+          [class.text-leaf-800]="activeView === 'admin'"
+          [class.text-neutral-500]="activeView !== 'admin'"
+          [class.hover:text-neutral-900]="activeView !== 'admin'"
+        >
+          Modo admin
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <span
+          class="hidden rounded-full px-3 py-1 text-xs font-bold sm:inline-flex"
+          [class.bg-leaf-600]="isAdmin"
+          [class.text-white]="isAdmin"
+          [class.bg-neutral-100]="!isAdmin"
+          [class.text-neutral-500]="!isAdmin"
+        >
+          {{ isAdmin ? 'Admin' : 'Invitado' }}
+        </span>
+        <button
+          *ngIf="isAdmin"
+          type="button"
+          (click)="logoutAdmin()"
+          class="hidden rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-semibold text-neutral-600 transition hover:border-red-200 hover:text-red-500 sm:inline-flex"
+        >
+          Cerrar sesión
+        </button>
+        <button
+          type="button"
+          (click)="toggleMenu()"
+          class="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 md:hidden"
+          aria-label="Abrir menú"
+        >
+          <svg *ngIf="!menuOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5">
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
+          <svg *ngIf="menuOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5">
+            <line x1="18" x2="6" y1="6" y2="18" />
+            <line x1="6" x2="18" y1="6" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="menuOpen" class="border-t border-neutral-100 bg-white px-4 py-4 md:hidden">
+      <nav class="grid gap-1">
+        <button type="button" (click)="selectView('inicio')" class="rounded-xl px-4 py-3 text-left text-sm font-semibold text-neutral-700 transition hover:bg-leaf-50 hover:text-leaf-800">Inicio</button>
+        <button type="button" (click)="selectView('catalogo')" class="rounded-xl px-4 py-3 text-left text-sm font-semibold text-neutral-700 transition hover:bg-leaf-50 hover:text-leaf-800">Catálogo</button>
+        <button type="button" (click)="selectView('sobre-mi')" class="rounded-xl px-4 py-3 text-left text-sm font-semibold text-neutral-700 transition hover:bg-leaf-50 hover:text-leaf-800">Sobre mí</button>
+        <button type="button" (click)="selectView('admin')" class="rounded-xl px-4 py-3 text-left text-sm font-semibold text-neutral-700 transition hover:bg-leaf-50 hover:text-leaf-800">Modo admin</button>
+      </nav>
+      <div class="mt-3 flex items-center gap-2 border-t border-neutral-100 pt-3">
+        <span class="rounded-full px-3 py-1 text-xs font-bold" [class.bg-leaf-600]="isAdmin" [class.text-white]="isAdmin" [class.bg-neutral-100]="!isAdmin" [class.text-neutral-500]="!isAdmin">
+          {{ isAdmin ? 'Admin' : 'Invitado' }}
+        </span>
+        <button *ngIf="isAdmin" type="button" (click)="logoutAdmin()" class="rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-semibold text-red-500 transition hover:border-red-200">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== WHATSAPP FLOTANTE ===== -->
+  <a
+    [href]="'https://wa.me/' + contactPhone"
+    target="_blank"
+    rel="noreferrer"
+    aria-label="Escríbenos por WhatsApp"
+    class="fixed bottom-6 right-6 z-50 flex h-14 w-14 animate-pulse-ring items-center justify-center rounded-full bg-[#25D366] text-white shadow-lift transition hover:scale-110"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+    </svg>
+  </a>
+
+  <main class="flex-1">
+    <!-- ============================================================= -->
+    <!-- VISTA INICIO (LANDING)                                         -->
+    <!-- ============================================================= -->
+    <section *ngIf="activeView === 'inicio'">
+      <!-- Hero -->
+      <section class="relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div class="absolute -right-32 -top-32 h-[30rem] w-[30rem] rounded-full bg-leaf-200/60 blur-3xl"></div>
+          <div class="absolute -left-40 top-40 h-96 w-96 rounded-full bg-leaf-100/80 blur-3xl"></div>
+          <div class="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-mist blur-3xl"></div>
+        </div>
+
+        <div class="relative mx-auto grid max-w-7xl gap-14 px-4 pb-24 pt-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-32 lg:pt-24">
+          <div class="reveal reveal-in">
+            <span class="inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-leaf-700 backdrop-blur">
+              <span class="h-1.5 w-1.5 rounded-full bg-leaf-500"></span>
+              Catálogo en línea
+            </span>
+            <h1 class="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight text-neutral-900 sm:text-6xl lg:text-7xl">
+              Cada producto,
+              <span class="text-leaf-600">elegido con estilo.</span>
+            </h1>
+            <p class="mt-6 max-w-xl text-lg leading-relaxed text-neutral-500">
+              Bienvenido a AdrianStore. Un catálogo curado con productos de calidad, precio justo y compra directa por WhatsApp. Sin fricción, sin complicaciones.
+            </p>
+            <div class="mt-8 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                (click)="selectView('catalogo')"
+                class="inline-flex items-center gap-2 rounded-full bg-leaf-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lift transition hover:bg-leaf-700"
+              >
+                Explorar catálogo
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                  <line x1="5" x2="19" y1="12" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+              <a
+                [href]="'https://wa.me/' + contactPhone"
+                target="_blank"
+                rel="noreferrer"
+                class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3.5 text-sm font-semibold text-neutral-800 transition hover:border-leaf-300 hover:text-leaf-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-[#25D366]">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+                </svg>
+                Escríbenos
+              </a>
+            </div>
+            <dl class="mt-10 flex flex-wrap gap-x-10 gap-y-4">
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-neutral-400">Productos</dt>
+                <dd class="mt-1 font-display text-2xl font-bold text-neutral-900">{{ products.length }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-neutral-400">Categorías</dt>
+                <dd class="mt-1 font-display text-2xl font-bold text-neutral-900">{{ categoryCards.length }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-neutral-400">Contacto</dt>
+                <dd class="mt-1 font-display text-2xl font-bold text-neutral-900">WhatsApp</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="reveal reveal-in reveal-delay-1 relative hidden lg:block">
+            <div class="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/60 shadow-lift">
+              <img *ngIf="heroProduct?.imageUrl" [src]="heroProduct!.imageUrl" alt="Producto destacado" class="h-full w-full bg-white/40 object-contain p-6" />
+              <div *ngIf="!heroProduct?.imageUrl" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-200 via-leaf-100 to-mist">
+                <span class="flex h-32 w-32 items-center justify-center rounded-3xl bg-white/70 p-4"><img src="assets/logo.png" alt="Logo AdrianStore" class="h-full w-full object-contain" /></span>
+              </div>
+              <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-leaf-900/20 to-transparent"></div>
+            </div>
+            <div class="absolute -left-6 top-10 animate-floaty rounded-2xl border border-white/60 bg-white/90 px-5 py-4 shadow-lift backdrop-blur">
+              <p class="text-xs font-semibold text-neutral-400">Producto favorito</p>
+              <p class="mt-0.5 font-display text-sm font-bold text-neutral-900">{{ heroProduct ? heroProduct.name : 'AdrianStore' }}</p>
+            </div>
+            <div class="absolute -right-4 bottom-14 animate-floaty rounded-2xl border border-white/60 bg-white/90 px-5 py-4 shadow-lift backdrop-blur" style="animation-delay: 1.2s">
+              <p class="text-xs font-semibold text-neutral-400">Pedido directo</p>
+              <p class="mt-0.5 flex items-center gap-1.5 font-display text-sm font-bold text-leaf-700">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-[#25D366]">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+                </svg>
+                WhatsApp
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Franja de confianza -->
+      <div class="border-y border-neutral-900/5 bg-white/70 backdrop-blur">
+        <div class="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-7 sm:px-6 md:grid-cols-4 lg:px-8">
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+            </span>
+            <span><span class="block text-sm font-semibold text-neutral-900">Entrega cuidadosa</span><span class="block text-xs text-neutral-500">Empaque seguro</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <span><span class="block text-sm font-semibold text-neutral-900">Pago seguro</span><span class="block text-xs text-neutral-500">Métodos de confianza</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+            </span>
+            <span><span class="block text-sm font-semibold text-neutral-900">Compra directa</span><span class="block text-xs text-neutral-500">Por WhatsApp</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <span><span class="block text-sm font-semibold text-neutral-900">Atención personal</span><span class="block text-xs text-neutral-500">Respuesta cercana</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categorías -->
+      <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div class="reveal mx-auto mb-12 max-w-2xl text-center">
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Explora</span>
+          <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Compra por categoría</h2>
+          <p class="mt-3 text-neutral-500">Elige el rubro que buscas y encuentra exactamente lo que necesitas.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <button
+            *ngFor="let card of categoryCards"
+            type="button"
+            (click)="selectCategory(card.value)"
+            class="reveal group flex flex-col items-center gap-4 rounded-3xl border border-neutral-900/5 bg-white p-6 text-center shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+          >
+            <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-white [&_svg]:h-7 [&_svg]:w-7" [class]="card.gradient">
+              <span [innerHTML]="card.icon"></span>
+            </span>
+            <span>
+              <span class="block font-display text-sm font-semibold text-neutral-900">{{ card.label }}</span>
+              <span class="mt-1 block text-xs text-neutral-400">{{ countFor(card.value) }} productos</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Productos destacados -->
+      <section class="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div class="reveal mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Lo nuevo</span>
+            <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Productos destacados</h2>
+          </div>
+          <button type="button" (click)="selectView('catalogo')" class="inline-flex items-center gap-1.5 text-sm font-semibold text-leaf-700 transition hover:text-leaf-800">
+            Ver todo
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <article
+            *ngFor="let product of featuredProducts"
+            class="reveal group flex flex-col overflow-hidden rounded-3xl border border-neutral-900/5 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+          >
+            <button
+              type="button"
+              (click)="openLightbox(product)"
+              (mouseenter)="setPhotoHover(product.id ?? null)"
+              (mouseleave)="setPhotoHover(null)"
+              class="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-neutral-100 text-left"
+            >
+              <div class="relative h-full w-full">
+                <div *ngIf="productImages(product).length" class="flex h-full w-full transition-transform duration-500 ease-in-out" [style.transform]="'translateX(-' + (photoIndex(product) * 100) + '%)'">
+                  <img *ngFor="let img of productImages(product)" [src]="img" [alt]="product.name" class="h-full w-full shrink-0 object-contain p-3" />
+                </div>
+                <div *ngIf="!productImages(product).length" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-100 to-leaf-50 text-leaf-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </div>
+              </div>
+              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
+            </button>
+            <div *ngIf="productImages(product).length > 1" class="flex justify-center gap-1.5 pt-3">
+              <button
+                *ngFor="let img of productImages(product); let i = index"
+                type="button"
+                (click)="setPhotoIndex(product, i)"
+                [attr.aria-label]="'Ver imagen ' + (i + 1)"
+                class="h-1.5 rounded-full transition-all duration-300"
+                [class.w-1.5]="i !== photoIndex(product)"
+                [class.w-5]="i === photoIndex(product)"
+                [class.bg-leaf-600]="i === photoIndex(product)"
+                [class.bg-neutral-300]="i !== photoIndex(product)"
+              ></button>
+            </div>
+            <div class="flex flex-1 flex-col gap-3 p-5">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="font-display text-lg font-semibold text-neutral-900">{{ product.name }}</h3>
+                <span class="whitespace-nowrap font-display text-lg font-bold text-leaf-700">{{ formatPrice(product) }}</span>
+              </div>
+              <p class="flex-1 text-sm leading-relaxed text-neutral-500 line-clamp-2">{{ product.description }}</p>
+              <div class="pt-1">
+                <a [href]="whatsappLink(product)" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-leaf-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                  Pedir por WhatsApp
+                </a>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div *ngIf="isLoading" class="py-16 text-center text-neutral-400">Cargando productos...</div>
+        <div *ngIf="!isLoading && products.length === 0" class="py-16 text-center">
+          <p class="font-display text-xl text-neutral-600">Aún no hay productos.</p>
+          <p class="mt-2 text-sm text-neutral-400">Vuelve pronto, estamos preparando el catálogo.</p>
+        </div>
+      </section>
+
+      <!-- Por qué AdrianStore -->
+      <section class="bg-leaf-900 py-20 text-white">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="reveal mx-auto mb-12 max-w-2xl text-center">
+            <span class="text-xs font-semibold uppercase tracking-widest text-leaf-300">Por qué AdrianStore</span>
+            <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Una compra simple, de principio a fin</h2>
+          </div>
+          <div class="grid gap-6 md:grid-cols-3">
+            <div class="reveal rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+              <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-leaf-400/20 text-leaf-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M12 3v18"/><path d="M5.5 6.5h13"/><path d="M7.5 10.5h9"/><path d="M9 14.5h6"/><path d="M12 3l3.5 3.5"/><path d="M12 21l-3.5-3.5"/></svg>
+              </span>
+              <h3 class="mt-6 font-display text-xl font-semibold">Selección curada</h3>
+              <p class="mt-3 text-sm leading-relaxed text-leaf-100/80">Cada artículo pasa por mi criterio: calidad, utilidad y buen precio. Nada de relleno.</p>
+            </div>
+            <div class="reveal reveal-delay-1 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+              <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-leaf-400/20 text-leaf-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+              </span>
+              <h3 class="mt-6 font-display text-xl font-semibold">Compra directo</h3>
+              <p class="mt-3 text-sm leading-relaxed text-leaf-100/80">Sin carritos ni formularios. Un mensaje de WhatsApp y el pedido queda en marcha.</p>
+            </div>
+            <div class="reveal reveal-delay-2 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+              <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-leaf-400/20 text-leaf-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+              </span>
+              <h3 class="mt-6 font-display text-xl font-semibold">Atención cercana</h3>
+              <p class="mt-3 text-sm leading-relaxed text-leaf-100/80">Respuesta personal, seguimiento de tu pedido y entrega bien cuidada.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vista previa de Sobre mí -->
+      <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div class="reveal grid items-center gap-10 rounded-[2.5rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-12 lg:grid-cols-[0.7fr_1.3fr] lg:p-16">
+          <div class="relative mx-auto h-44 w-44 overflow-hidden rounded-full border-4 border-white bg-white shadow-soft">
+            <img src="assets/logo.png" alt="Logo AdrianStore" class="h-full w-full object-contain" />
+            <span class="absolute -right-2 -top-2 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-mist text-leaf-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </span>
+          </div>
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Sobre mí</span>
+            <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Detrás de AdrianStore</h2>
+            <p class="mt-4 leading-relaxed text-neutral-500 line-clamp-5">
+              {{ aboutContent || 'Conoce quién está detrás del catálogo y la filosofía con la que elijo cada producto.' }}
+            </p>
+            <button type="button" (click)="selectView('sobre-mi')" class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-leaf-700 transition hover:text-leaf-800">
+              Leer la historia completa
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- VISTA CATÁLOGO                                                 -->
+    <!-- ============================================================= -->
+    <section *ngIf="activeView === 'catalogo'" class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="reveal flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Catálogo</span>
+          <h2 class="mt-2 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Todos los productos</h2>
+        </div>
+        <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ filteredProducts.length }} productos</span>
+      </div>
+
+      <div class="reveal mt-8 flex flex-wrap gap-2">
+        <button
+          *ngFor="let category of catalogOptions"
+          type="button"
+          (click)="selectCategory(category.value)"
+          class="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition"
+          [class.bg-leaf-600]="selectedCategory === category.value"
+          [class.text-white]="selectedCategory === category.value"
+          [class.border-leaf-600]="selectedCategory === category.value"
+          [class.border-neutral-200]="selectedCategory !== category.value"
+          [class.bg-white]="selectedCategory !== category.value"
+          [class.text-neutral-600]="selectedCategory !== category.value"
+          [class.hover:border-leaf-300]="selectedCategory !== category.value"
+        >
+          <span *ngIf="iconForCategory(category.value)" class="[&_svg]:h-4 [&_svg]:w-4" [innerHTML]="iconForCategory(category.value)"></span>
+          {{ category.label }}
+        </button>
+      </div>
+
+      <div *ngIf="priceBounds.max > priceBounds.min" class="reveal mt-8 rounded-3xl border border-neutral-900/5 bg-white p-6 shadow-soft">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold text-neutral-900">Filtrar por precio</p>
+            <p class="text-xs text-neutral-400">Arrastra las bolas para ajustar el rango</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Mín <strong class="ml-1 text-neutral-900">{{ formatAmount(minPrice) }}</strong></span>
+            <span class="text-neutral-300">–</span>
+            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Máx <strong class="ml-1 text-neutral-900">{{ formatAmount(maxPrice) }}</strong></span>
+            <button type="button" (click)="resetPrice()" class="ml-1 text-xs font-semibold text-leaf-700 transition hover:text-leaf-800">Restablecer</button>
+          </div>
+        </div>
+        <div class="relative mt-6 h-6">
+          <div class="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-neutral-200"></div>
+          <div
+            class="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-leaf-600"
+            [style.left]="minPercent + '%'"
+            [style.right]="(100 - maxPercent) + '%'"
+          ></div>
+          <input
+            type="range"
+            class="price-range"
+            [min]="priceBounds.min"
+            [max]="priceBounds.max"
+            [step]="priceStep"
+            [value]="minPrice"
+            (input)="onMinPrice($event)"
+            aria-label="Precio mínimo"
+          />
+          <input
+            type="range"
+            class="price-range"
+            [min]="priceBounds.min"
+            [max]="priceBounds.max"
+            [step]="priceStep"
+            [value]="maxPrice"
+            (input)="onMaxPrice($event)"
+            aria-label="Precio máximo"
+          />
+        </div>
+      </div>
+
+      <div class="relative mt-10">
+        <img
+          *ngIf="showCategoryBackground && !categoryImageFailed && selectedCategoryImage"
+          [src]="selectedCategoryImage"
+          alt=""
+          aria-hidden="true"
+          (error)="onCategoryImageError()"
+          class="pointer-events-none absolute inset-0 h-full w-full rounded-[2.5rem] object-cover opacity-90"
+        />
+        <div class="relative">
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <article
+          *ngFor="let product of filteredProducts"
+          class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-900/5 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+        >
+          <button
+            type="button"
+            (click)="openLightbox(product)"
+            (mouseenter)="setPhotoHover(product.id ?? null)"
+            (mouseleave)="setPhotoHover(null)"
+            class="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-neutral-100 text-left"
+          >
+            <div class="relative h-full w-full">
+              <div *ngIf="productImages(product).length" class="flex h-full w-full transition-transform duration-500 ease-in-out" [style.transform]="'translateX(-' + (photoIndex(product) * 100) + '%)'">
+                <img *ngFor="let img of productImages(product)" [src]="img" [alt]="product.name" class="h-full w-full shrink-0 object-contain p-3" />
+              </div>
+              <div *ngIf="!productImages(product).length" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-100 to-leaf-50 text-leaf-600">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+              </div>
+            </div>
+            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
+          </button>
+          <div *ngIf="productImages(product).length > 1" class="flex justify-center gap-1.5 pt-3">
+            <button
+              *ngFor="let img of productImages(product); let i = index"
+              type="button"
+              (click)="setPhotoIndex(product, i)"
+              [attr.aria-label]="'Ver imagen ' + (i + 1)"
+              class="h-1.5 rounded-full transition-all duration-300"
+              [class.w-1.5]="i !== photoIndex(product)"
+              [class.w-5]="i === photoIndex(product)"
+              [class.bg-leaf-600]="i === photoIndex(product)"
+              [class.bg-neutral-300]="i !== photoIndex(product)"
+            ></button>
+          </div>
+          <div class="flex flex-1 flex-col gap-3 p-5">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="font-display text-lg font-semibold text-neutral-900">{{ product.name }}</h3>
+              <span class="whitespace-nowrap font-display text-lg font-bold text-leaf-700">{{ formatPrice(product) }}</span>
+            </div>
+            <p class="flex-1 text-sm leading-relaxed text-neutral-500 line-clamp-2">{{ product.description }}</p>
+            <div *ngIf="product.acceptsTransfer" class="-mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5"/></svg>
+              Acepta transferencia
+            </div>
+            <div class="pt-1">
+              <a [href]="whatsappLink(product)" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-leaf-600">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                Pedir por WhatsApp
+              </a>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div *ngIf="isLoading" class="py-16 text-center text-neutral-400">Cargando productos...</div>
+      <div *ngIf="!isLoading && filteredProducts.length === 0" class="py-16 text-center">
+        <p class="font-display text-xl text-neutral-600">No hay productos en esta categoría.</p>
+        <p class="mt-2 text-sm text-neutral-400">Prueba con otra categoría o vuelve pronto.</p>
+      </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- VISTA SOBRE MÍ                                                 -->
+    <!-- ============================================================= -->
+    <section *ngIf="activeView === 'sobre-mi'" class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+      <div class="reveal text-center">
+        <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Sobre mí</span>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Un poco de presentación</h2>
+      </div>
+
+      <div *ngIf="!isAdmin" class="reveal reveal-delay-1 mt-10 rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-12">
+        <p class="whitespace-pre-wrap text-lg leading-relaxed text-neutral-600">{{ aboutContent || 'Aún no hay contenido en esta sección.' }}</p>
+        <p *ngIf="aboutUpdatedAt" class="mt-6 text-sm text-neutral-400">Actualizado el {{ aboutUpdatedAt | date: 'longDate' }}</p>
+      </div>
+
+      <div *ngIf="isAdmin" class="reveal reveal-delay-1 mt-10 rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-10">
+        <h3 class="font-display text-xl font-semibold text-neutral-900">Editar "Sobre mí"</h3>
+        <p class="mt-1 text-sm text-neutral-500">Este contenido lo ven los visitantes en esta sección.</p>
+        <textarea
+          class="mt-6 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 leading-relaxed outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"
+          [(ngModel)]="editAboutContent"
+          rows="8"
+          placeholder="Escribe tu carta de presentación..."
+        ></textarea>
+        <button type="button" (click)="saveAbout()" class="mt-4 rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Guardar cambios</button>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- VISTA MODO ADMIN                                               -->
+    <!-- ============================================================= -->
+    <section *ngIf="activeView === 'admin'" class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <!-- Login -->
+      <div *ngIf="!isAdmin" class="mx-auto max-w-md">
+        <div class="reveal rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-10">
+          <button type="button" (click)="goBackFromAdmin()" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 transition hover:text-neutral-800">← Volver</button>
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Solo administrador</span>
+          <h2 class="mt-2 font-display text-2xl font-bold text-neutral-900">Acceso al panel</h2>
+          <p class="mt-2 text-sm text-neutral-500">Ingresa tus credenciales para administrar el catálogo.</p>
+          <div class="mt-6 space-y-4">
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Usuario</span>
+              <input
+                type="text"
+                [(ngModel)]="adminUsername"
+                placeholder="admin"
+                class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"
+              />
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Contraseña</span>
+              <input
+                type="password"
+                [(ngModel)]="adminPassword"
+                placeholder="admin123"
+                class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"
+              />
+            </label>
+          </div>
+          <div *ngIf="adminLoginError" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{{ adminLoginError }}</div>
+          <div *ngIf="isLocked()" class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">Acceso bloqueado. Espera {{ formatLockTime(lockRemaining) }} para reintentar.</div>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button type="button" [disabled]="isLocked()" (click)="loginAsAdmin()" class="rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700 disabled:cursor-not-allowed disabled:opacity-50">Ingresar</button>
+            <button type="button" (click)="goBackFromAdmin()" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition hover:border-leaf-300 hover:text-leaf-700">Quedarme en modo usuario</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel -->
+      <div *ngIf="isAdmin">
+        <div class="reveal rounded-3xl border border-leaf-200 bg-leaf-50 px-6 py-4">
+          <p class="text-sm font-medium text-leaf-800">Sesión de administrador activa. Solo tú puedes crear, editar o eliminar productos.</p>
+        </div>
+
+        <section class="reveal mt-8 rounded-[2rem] border border-neutral-900/5 bg-white p-6 shadow-soft sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="font-display text-2xl font-bold text-neutral-900">{{ editProductId ? 'Editar producto' : 'Agregar producto' }}</h2>
+            <button *ngIf="editProductId" type="button" (click)="cancelEdit()" class="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">Cancelar edición</button>
+          </div>
+
+          <form #productForm="ngForm" (ngSubmit)="editProductId ? saveProduct(productForm) : submitProduct(productForm)" class="mt-6">
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">Nombre *</span>
+                <input name="name" [(ngModel)]="model.name" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">Precio *</span>
+                <input name="price" type="number" min="0" step="0.01" [(ngModel)]="model.price" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">Moneda</span>
+                <select name="currency" [(ngModel)]="model.currency" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200">
+                  <option *ngFor="let item of currencyOptions" [value]="item.value">{{ item.label }}</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">Tipo</span>
+                <select name="type" [(ngModel)]="model.type" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200">
+                  <option *ngFor="let item of productTypes" [value]="item.value">{{ item.label }}</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">WhatsApp</span>
+                <input name="whatsapp" [(ngModel)]="model.whatsapp" placeholder="521XXXXXXXXXX" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+              </label>
+              <label class="block sm:col-span-2">
+                <span class="text-sm font-medium text-neutral-700">Descripción</span>
+                <textarea name="description" [(ngModel)]="model.description" rows="3" class="mt-1.5 w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"></textarea>
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium text-neutral-700">Imágenes (opcional, hasta 10)</span>
+                <input type="file" accept="image/png, image/jpeg, image/webp" multiple (change)="updateImagePreviews($event)" class="mt-1.5 block w-full text-sm text-neutral-500 file:mr-4 file:rounded-full file:border-0 file:bg-leaf-100 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-leaf-700 hover:file:bg-leaf-200" />
+              </label>
+              <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <input type="checkbox" name="acceptsTransfer" [(ngModel)]="model.acceptsTransfer" class="h-5 w-5 rounded border-neutral-300 text-leaf-600 focus:ring-leaf-400" />
+                <span class="text-sm font-medium text-neutral-700">Acepta transferencia como pago</span>
+              </label>
+            </div>
+
+            <div *ngIf="imagePreviews.length" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div *ngFor="let preview of imagePreviews" class="overflow-hidden rounded-2xl border border-neutral-200">
+                <img [src]="preview" alt="Vista previa" class="h-36 w-full object-contain bg-neutral-50" />
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button type="submit" [disabled]="productForm.invalid" class="rounded-full bg-leaf-600 px-7 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700 disabled:cursor-not-allowed disabled:opacity-50">
+                {{ editProductId ? 'Guardar cambios' : 'Guardar producto' }}
+              </button>
+              <button *ngIf="editProductId" type="button" (click)="cancelEdit()" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-300">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <div class="mt-14 flex flex-wrap items-end justify-between gap-4">
+          <h2 class="font-display text-2xl font-bold text-neutral-900">Productos del catálogo</h2>
+          <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ products.length }} productos</span>
+        </div>
+
+        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <article
+            *ngFor="let product of products"
+            class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-900/5 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+          >
+            <button
+              type="button"
+              (click)="openLightbox(product)"
+              (mouseenter)="setPhotoHover(product.id ?? null)"
+              (mouseleave)="setPhotoHover(null)"
+              class="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-neutral-100 text-left"
+            >
+              <div class="relative h-full w-full">
+                <div *ngIf="productImages(product).length" class="flex h-full w-full transition-transform duration-500 ease-in-out" [style.transform]="'translateX(-' + (photoIndex(product) * 100) + '%)'">
+                  <img *ngFor="let img of productImages(product)" [src]="img" [alt]="product.name" class="h-full w-full shrink-0 object-contain p-3" />
+                </div>
+                <div *ngIf="!productImages(product).length" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-100 to-leaf-50 text-leaf-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </div>
+              </div>
+              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
+            </button>
+            <div *ngIf="productImages(product).length > 1" class="flex justify-center gap-1.5 pt-3">
+              <button
+                *ngFor="let img of productImages(product); let i = index"
+                type="button"
+                (click)="setPhotoIndex(product, i)"
+                [attr.aria-label]="'Ver imagen ' + (i + 1)"
+                class="h-1.5 rounded-full transition-all duration-300"
+                [class.w-1.5]="i !== photoIndex(product)"
+                [class.w-5]="i === photoIndex(product)"
+                [class.bg-leaf-600]="i === photoIndex(product)"
+                [class.bg-neutral-300]="i !== photoIndex(product)"
+              ></button>
+            </div>
+            <div class="flex flex-1 flex-col gap-3 p-5">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="font-display text-lg font-semibold text-neutral-900">{{ product.name }}</h3>
+                <span class="whitespace-nowrap font-display text-lg font-bold text-leaf-700">{{ formatPrice(product) }}</span>
+              </div>
+              <div class="pt-1 flex flex-wrap gap-2">
+                <a [href]="whatsappLink(product)" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-leaf-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                  WhatsApp
+                </a>
+                <button type="button" (click)="startEdit(product)" class="rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-leaf-300 hover:text-leaf-700">Editar</button>
+                <button type="button" (click)="deleteProduct(product)" class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50">Eliminar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div *ngIf="!isLoading && products.length === 0" class="py-16 text-center">
+          <p class="font-display text-xl text-neutral-600">No hay productos todavía.</p>
+          <p class="mt-2 text-sm text-neutral-400">Agrega el primero con el formulario de arriba.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <div *ngIf="lightboxProduct" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm" (click)="closeLightbox()">
+    <div class="relative flex max-h-full w-full max-w-4xl flex-col gap-4" (click)="$event.stopPropagation()">
+      <button type="button" (click)="closeLightbox()" class="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+
+      <div class="flex h-[65vh] items-center justify-center overflow-hidden rounded-3xl bg-neutral-900">
+        <img [src]="productImages(lightboxProduct)[lightboxIndex]" [alt]="lightboxProduct.name" class="max-h-full max-w-full object-contain" />
+      </div>
+
+      <div class="flex items-center justify-center gap-4">
+        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="prevLightboxImage()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Anterior">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          <img
+            *ngFor="let img of productImages(lightboxProduct); let i = index"
+            [src]="img"
+            [alt]="lightboxProduct.name + ' ' + (i + 1)"
+            (click)="lightboxIndex = i"
+            class="h-16 w-16 shrink-0 cursor-pointer rounded-xl object-cover transition"
+            [class.ring-2]="i === lightboxIndex"
+            [class.ring-leaf-400]="i === lightboxIndex"
+            [class.opacity-50]="i !== lightboxIndex"
+          />
+        </div>
+        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="nextLightboxImage()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Siguiente">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <p class="text-center font-display text-lg font-semibold text-white">{{ lightboxProduct.name }}</p>
+      <p class="text-center text-sm font-medium text-leaf-300">{{ formatPrice(lightboxProduct) }}</p>
+      <div class="flex justify-center">
+        <a [href]="whatsappLink(lightboxProduct)" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-leaf-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf-600">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          Pedir por WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="border-t border-neutral-900/5 bg-white">
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <img src="assets/logo.png" alt="Logo AdrianStore" class="h-9 w-9 rounded-xl object-contain" />
+            <span class="font-display text-base font-bold text-neutral-900">AdrianStore</span>
+          </div>
+          <p class="mt-4 max-w-sm text-sm leading-relaxed text-neutral-500">Un catálogo curado con productos de calidad, precio justo y compra directa por WhatsApp. Creado con dedicación, pieza por pieza.</p>
+          <a [href]="'https://wa.me/' + contactPhone" target="_blank" rel="noreferrer" class="mt-5 inline-flex items-center gap-2 rounded-full bg-leaf-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+            Escríbenos por WhatsApp
+          </a>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-semibold uppercase tracking-widest text-neutral-400">Explora</h4>
+          <ul class="mt-4 space-y-2.5 text-sm">
+            <li><button type="button" (click)="selectView('inicio')" class="text-neutral-600 transition hover:text-leaf-700">Inicio</button></li>
+            <li><button type="button" (click)="selectView('catalogo')" class="text-neutral-600 transition hover:text-leaf-700">Catálogo</button></li>
+            <li><button type="button" (click)="selectView('sobre-mi')" class="text-neutral-600 transition hover:text-leaf-700">Sobre mí</button></li>
+            <li><button type="button" (click)="selectView('admin')" class="text-neutral-600 transition hover:text-leaf-700">Modo admin</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-semibold uppercase tracking-widest text-neutral-400">Contacto</h4>
+          <ul class="mt-4 space-y-2.5 text-sm text-neutral-600">
+            <li class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-leaf-600"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+              WhatsApp directo
+            </li>
+            <li class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-leaf-600"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              Pedidos personalizados
+            </li>
+            <li class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-leaf-600"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              Compra con confianza
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-neutral-100 pt-8 text-sm text-neutral-400">
+        <p>© {{ currentYear }} AdrianStore. Todos los derechos reservados.</p>
+        <p class="flex items-center gap-1.5">Hecho con <span class="text-leaf-600">♥</span> para ti</p>
+      </div>
+    </div>
+  </footer>
+</div>
