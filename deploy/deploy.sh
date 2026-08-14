@@ -41,10 +41,13 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
 fi
 
 # 4) Backend: dependencias + build
+# Nota: tsc (devDependency) es necesario para compilar; por eso se instalan
+# todas las dependencias y luego se descartan las de desarrollo.
 echo "==> Backend: npm ci + build"
 cd "$BACKEND_DIR"
-npm ci --omit=dev
+npm ci
 npm run build
+npm prune --omit=dev
 
 # 5) Frontend: dependencias + build de producción
 echo "==> Frontend: npm ci + build de producción"
@@ -57,6 +60,7 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$BACKEND_DIR/uploads"
 
 # 7) Crear el admin con la credencial del .env (y eliminar admin123)
 echo "==> Configurando usuario administrador"
+cd "$BACKEND_DIR"
 node "$BACKEND_DIR/dist/setup-admin.js"
 
 # 8) Servicio systemd

@@ -748,9 +748,25 @@ export class AppComponent implements OnInit, OnDestroy {
 
   whatsappLink(product: Product): string {
     const phone = (product.whatsapp?.trim() || this.contactPhone).trim();
-    const message = encodeURIComponent(
-      `Hola, me interesa el producto ${product.name} (${this.formatPrice(product)}). ¿Está disponible?`,
-    );
+    const typeLabel = this.catalogOptions.find((o) => o.value === (product.type || 'otros').toLowerCase())?.label ?? 'Otros';
+    const description = (product.description || '').trim();
+    const lines = [
+      'Hola, me interesa este producto:',
+      '',
+      `*Nombre:* ${product.name}`,
+    ];
+    if (description) {
+      lines.push(`*Descripción:* ${description.slice(0, 300)}`);
+    }
+    lines.push(`*Precio:* ${this.formatPrice(product)}`);
+    lines.push(`*Categoría:* ${typeLabel}`);
+    lines.push(`*Provincia:* ${product.province || 'Camagüey'}`);
+    lines.push(`*Acepta transferencia:* ${product.acceptsTransfer ? 'Sí' : 'No'}`);
+    if (product.imageUrl) {
+      lines.push(`*Foto:* ${product.imageUrl}`);
+    }
+    lines.push('', '¿Está disponible?');
+    const message = encodeURIComponent(lines.join('\n'));
     return `https://wa.me/${phone}?text=${message}`;
   }
 

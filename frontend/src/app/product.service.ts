@@ -29,9 +29,10 @@ export interface AboutInfo {
 
 @Injectable()
 export class ProductService {
-  private apiUrl = `${environment.apiUrl}/products`;
-  private authUrl = `${environment.apiUrl}/auth`;
-  private aboutUrl = `${environment.apiUrl}/about`;
+  private baseApi = ((window as any).__ADRIAN_API_BASE__ as string) || environment.apiUrl;
+  private apiUrl = `${this.baseApi}/products`;
+  private authUrl = `${this.baseApi}/auth`;
+  private aboutUrl = `${this.baseApi}/about`;
 
   constructor(private http: HttpClient) {}
 

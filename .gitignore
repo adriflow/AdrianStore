@@ -3,5 +3,7 @@ dist/
 uploads/
 *.log
 .env
+.env.local
 .angular/
 .DS_Store
+frontend/src/assets/config.local.json

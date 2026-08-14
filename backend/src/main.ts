@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
@@ -14,6 +14,11 @@ import { MulterExceptionFilter } from './security/multer.filter';
 import { originGuard } from './security/origin.middleware';
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Modo pruebas LAN: si existe .env.local, sobreescribe .env.
+// Bórralo y el backend vuelve a la configuración normal.
+dotenvConfig();
+dotenvConfig({ path: join(process.cwd(), '.env.local'), override: true });
 
 async function bootstrap() {
   requireEnv('JWT_SECRET');
