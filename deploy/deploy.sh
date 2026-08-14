@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-DOMAIN="${1:-adrianstore.com}"
+DOMAIN="${1:-adrianstore.ladetec.com}"
 APP_DIR="/opt/adrianstore"
 BACKEND_DIR="$APP_DIR/backend"
 FRONTEND_DIR="$APP_DIR/frontend"
@@ -82,7 +82,7 @@ if ! command -v caddy &>/dev/null; then
   apt-get install -y caddy
 fi
 
-sed -e "s|adrianstore.com|$DOMAIN|g" -e "s|/opt/adrianstore|$APP_DIR|g" "$APP_DIR/deploy/Caddyfile" > /etc/caddy/Caddyfile
+sed -e "s|adrianstore.ladetec.com|$DOMAIN|g" -e "s|/opt/adrianstore|$APP_DIR|g" "$APP_DIR/deploy/Caddyfile" > /etc/caddy/Caddyfile
 systemctl restart caddy
 
 echo ""

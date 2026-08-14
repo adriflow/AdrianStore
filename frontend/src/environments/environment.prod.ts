@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://adrianstore.com/api'
+  apiUrl: 'https://adrianstore.ladetec.com/api'
 };

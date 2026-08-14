@@ -1,4 +1,4 @@
-adrianstore.com {
+adrianstore.ladetec.com {
 	encode gzip
 
 	root * /opt/adrianstore/frontend/dist/adrianstore-frontend
