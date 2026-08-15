@@ -245,6 +245,24 @@ docker run -p 3000:3000 --env-file backend/.env adrianstore-backend
 
 Con esas 5 variables puestas, `create`/`update`/`delete` de productos y "Sobre mí" suben, sirven y borran las imágenes directo en R2 — sin tocar disco. Sin ellas, sigue funcionando igual que antes (disco local), útil para dev sin cuenta de Cloudflare.
 
+### Alternativa: Docker Swarm (frontend en Cloudflare Pages, backend detrás de Traefik)
+
+`deploy/docker-stack.yml` despliega solo el backend (sin Postgres) en un swarm existente, conectado a dos redes overlay externas: `traefik-public` (salida vía tu Traefik detrás de Cloudflare) y `postgres-public` (para llegar a un Postgres ya desplegado en otro stack). El frontend se sirve aparte, como sitio estático en Cloudflare Pages.
+
+```bash
+docker build -f backend/Dockerfile -t ghcr.io/vladimir1284/adrianstore-backend:latest .
+docker push ghcr.io/vladimir1284/adrianstore-backend:latest
+cp deploy/stack.env.example deploy/stack.env   # completar valores reales
+export $(grep -v '^#' deploy/stack.env | xargs)
+docker stack deploy -c deploy/docker-stack.yml adrianstore
+```
+
+Cosas a ajustar/verificar (no tengo acceso a tu swarm real):
+- Nombre real del servicio Postgres en `postgres-public` para `DATABASE_URL` (`docker service ls` en ese stack).
+- Nombres de entrypoint/certresolver de tu Traefik (el stack asume la convención típica `http`/`https` + certresolver `le`; si tu Traefik usa otros nombres, cambia las labels).
+- El dominio del backend **no puede ser el mismo hostname** que apunta a Cloudflare Pages — usa un subdominio (p. ej. `api.adrianstore.ladetec.com`) para el backend y el dominio principal para Pages.
+- `replicas: 1` por diseño: el rate limiting (`ThrottlerGuard`) cuenta en memoria por réplica: escalar sin mover el throttler a un store compartido (Redis) rompe el límite real.
+
 ---
 
 ## Roles

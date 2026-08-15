@@ -4,6 +4,7 @@ uploads/
 *.log
 .env
 .env.local
+deploy/stack.env
 .angular/
 .DS_Store
 frontend/src/assets/config.local.json
