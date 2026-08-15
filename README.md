@@ -8,6 +8,7 @@ Catálogo en línea de AdrianStore: tienda personal con productos seleccionados 
 | Base de datos | PostgreSQL (en producción) · SQLite en tests    |
 | Frontend   | Angular 16 · Tailwind CSS 3 · RxJS                |
 | Seguridad  | Helmet/CSP · bcrypt · throttling · validación de archivos |
+| Gestor de paquetes | pnpm (workspace en la raíz: `backend` + `frontend`) |
 
 ---
 
@@ -58,6 +59,7 @@ AdrianStore/
 ## Requisitos
 
 - Node.js 18+
+- pnpm (`corepack enable && corepack prepare pnpm@11.9.0 --activate`)
 - PostgreSQL (probado con PostgreSQL 18); crear una base de datos llamada `adrianstore`.
 - Angular CLI (se instala con las dependencias del frontend).
 
@@ -65,13 +67,18 @@ AdrianStore/
 
 ## Puesta en marcha (desarrollo)
 
+Es un workspace pnpm: un solo `pnpm install` en la raíz instala `backend/` y `frontend/`.
+
+```bash
+pnpm install
+```
+
 ### 1. Backend
 
 ```bash
 cd backend
-npm install
 cp .env.example .env   # ajustar valores (DB, JWT_SECRET, etc.)
-npm run start:dev      # http://localhost:3000
+pnpm run start:dev     # http://localhost:3000
 ```
 
 Variables de entorno (`backend/.env`):
@@ -80,12 +87,15 @@ Variables de entorno (`backend/.env`):
 |-------------------------|------------------------------------------------|-------------------------|
 | `PORT`                  | Puerto del backend                             | `3000`                  |
 | `NODE_ENV`              | `production` activa CSP estricto, cookies `secure` y oculta Swagger | `development` |
-| `DB_HOST` / `DB_PORT`   | Host y puerto de PostgreSQL                    | `localhost` / `5432`    |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y nombre de la base de datos | `postgres` / - / `adrianstore` |
+| `DATABASE_URL`          | Cadena de conexión única (Neon/Supabase/Render/Railway...); si está definida, tiene prioridad sobre `DB_HOST`/`DB_USER`/etc. | - |
+| `DB_SSL`                | Fuerza (`true`) o desactiva (`false`) TLS con Postgres; por defecto se activa solo si hay `DATABASE_URL` | - |
+| `DB_HOST` / `DB_PORT`   | Host y puerto de PostgreSQL (si no usas `DATABASE_URL`)         | `localhost` / `5432`    |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y nombre de la base de datos (si no usas `DATABASE_URL`) | `postgres` / - / `adrianstore` |
 | `JWT_SECRET`            | Secreto para firmar tokens (**obligatorio**)   | -                       |
 | `BACKEND_URL`           | URL pública del backend (para URLs de imágenes) | `http://localhost:3000` |
 | `FRONTEND_URL`          | Origen permitido (CORS y validación de origen) | `http://localhost:4200` |
-| `ADMIN_USERNAME`        | Usuario administrador (`npm run setup:admin`)  | `adrian0502`            |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` / `R2_PUBLIC_URL` | Storage de imágenes en Cloudflare R2; si faltan, cae a disco local (`backend/uploads/`) | - |
+| `ADMIN_USERNAME`        | Usuario administrador (`pnpm run setup:admin`)  | `adrian0502`            |
 | `ADMIN_PASSWORD`        | Contraseña del administrador                   | -                       |
 | `THROTTLE_LIMIT` / `THROTTLE_TTL` | Límite global de peticiones por minuto | `20` / `60000` |
 | `LOGIN_THROTTLE_LIMIT` / `LOGIN_THROTTLE_TTL` | Límite de intentos de login | `5` / `60000` |
@@ -98,7 +108,7 @@ El usuario admin **ya no se crea con el seed**. Usa:
 
 ```bash
 cd backend
-npm run setup:admin    # lee ADMIN_USERNAME / ADMIN_PASSWORD del .env
+pnpm run setup:admin    # lee ADMIN_USERNAME / ADMIN_PASSWORD del .env
 ```
 
 Esto crea o actualiza el administrador y elimina el usuario legado `admin123` si existiera.
@@ -107,16 +117,15 @@ Esto crea o actualiza el administrador y elimina el usuario legado `admin123` si
 
 ```bash
 cd backend
-npm run seed           # inserta 4 productos de ejemplo
-npm run clean          # vacía la base de datos sin borrar la estructura
+pnpm run seed           # inserta 4 productos de ejemplo
+pnpm run clean          # vacía la base de datos sin borrar la estructura
 ```
 
 ### 4. Frontend
 
 ```bash
 cd frontend
-npm install
-npm start              # http://localhost:4200
+pnpm start              # http://localhost:4200
 ```
 
 ---
@@ -127,20 +136,20 @@ npm start              # http://localhost:4200
 
 | Comando             | Descripción                                   |
 |---------------------|-----------------------------------------------|
-| `npm run start:dev` | Ejecuta el backend en modo desarrollo         |
-| `npm run build`     | Compila a `dist/` (TypeScript)                |
-| `npm run test`      | Tests e2e (Jest + supertest, SQLite en memoria) |
-| `npm run seed`      | Inserta productos de ejemplo                  |
-| `npm run clean`     | Vacía productos, usuarios y "Sobre mí"        |
-| `npm run setup:admin` | Crea/actualiza el admin desde el `.env`     |
+| `pnpm run start:dev` | Ejecuta el backend en modo desarrollo         |
+| `pnpm run build`     | Compila a `dist/` (TypeScript)                |
+| `pnpm run test`      | Tests e2e (Jest + supertest, SQLite en memoria) |
+| `pnpm run seed`      | Inserta productos de ejemplo                  |
+| `pnpm run clean`     | Vacía productos, usuarios y "Sobre mí"        |
+| `pnpm run setup:admin` | Crea/actualiza el admin desde el `.env`     |
 
 ### Frontend (`frontend/`)
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm start` | Servidor de desarrollo en `http://localhost:4200` |
-| `npm run build` | Compila la aplicación |
-| `npx ng build --configuration production` | Compila con `environment.prod.ts`, optimización y hashing |
+| `pnpm start` | Servidor de desarrollo en `http://localhost:4200` |
+| `pnpm run build` | Compila la aplicación |
+| `pnpm exec ng build --configuration production` | Compila con `environment.prod.ts`, optimización y hashing |
 
 ---
 
@@ -161,6 +170,12 @@ npm start              # http://localhost:4200
 ## API
 
 Base: `http://localhost:3000/api` · Documentación Swagger en `/api/docs` (solo desarrollo).
+
+### Salud
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET`  | `/api/health` | Health check para el hosting/orquestador (`{ status: "ok" }`) |
 
 ### Autenticación
 
@@ -209,6 +224,26 @@ El kit está en la carpeta `deploy/`. Pasos:
 5. Abre los puertos 80/443 en el firewall y apunta el DNS del dominio al servidor.
 
 `deploy.sh` instala y compila el backend y el frontend, configura el admin (`setup-admin`), crea el servicio `adrianstore-backend` (systemd) e instala **Caddy** con HTTPS automático (Let's Encrypt). Como alternativa, `nginx.conf` cubre el mismo escenario con nginx.
+
+### Alternativa: contenedor
+
+`backend/Dockerfile` compila y empaqueta el backend (multi-stage, usa `pnpm deploy` para aislar `node_modules`). El contexto de build es la **raíz del repo** (es un workspace pnpm), no `backend/`:
+
+```bash
+docker build -f backend/Dockerfile -t adrianstore-backend .
+docker run -p 3000:3000 --env-file backend/.env adrianstore-backend
+```
+
+> Si `R2_*` no está configurado, las imágenes se guardan en `backend/uploads/` (disco local). En un contenedor sin volumen persistente se pierden en cada redeploy/reinicio — configura R2 (ver abajo) antes de desplegar en cualquier PaaS con filesystem efímero.
+
+### Storage de imágenes: Cloudflare R2
+
+1. Crea el bucket: `wrangler r2 bucket create adrianstore-uploads`
+2. Actívale una URL pública (dashboard del bucket → Settings → "Public Development URL", o `wrangler r2 bucket domain add` con tu propio dominio).
+3. Crea un API token con permiso **Object Read & Write** sobre ese bucket (dashboard → R2 → Manage API tokens) — te da `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`.
+4. Completa en `backend/.env`: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (sin barra final).
+
+Con esas 5 variables puestas, `create`/`update`/`delete` de productos y "Sobre mí" suben, sirven y borran las imágenes directo en R2 — sin tocar disco. Sin ellas, sigue funcionando igual que antes (disco local), útil para dev sin cuenta de Cloudflare.
 
 ---
 

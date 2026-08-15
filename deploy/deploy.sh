@@ -3,7 +3,8 @@
 #
 # Requisitos previos:
 #   1. Tener el repositorio clonado en /opt/adrianstore
-#   2. Tener Node.js 18+ y PostgreSQL instalados y corriendo
+#   2. Tener Node.js 18+, pnpm (corepack enable && corepack prepare pnpm@11.9.0 --activate)
+#      y PostgreSQL instalados y corriendo
 #   3. Crear /opt/adrianstore/backend/.env (copia de backend/.env.example
 #      con tus valores reales: DB, JWT_SECRET, ADMIN_PASSWORD, BACKEND_URL,
 #      FRONTEND_URL con tu dominio HTTPS)
@@ -41,19 +42,19 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
 fi
 
 # 4) Backend: dependencias + build
-# Nota: tsc (devDependency) es necesario para compilar; por eso se instalan
-# todas las dependencias y luego se descartan las de desarrollo.
-echo "==> Backend: npm ci + build"
+# Nota: es un workspace pnpm (raíz del repo); se instala todo el workspace
+# y luego se poda a dependencias de producción solo en el backend.
+echo "==> Backend: pnpm install + build"
+cd "$APP_DIR"
+pnpm install --frozen-lockfile
 cd "$BACKEND_DIR"
-npm ci
-npm run build
-npm prune --omit=dev
+pnpm run build
+pnpm prune --prod
 
 # 5) Frontend: dependencias + build de producción
-echo "==> Frontend: npm ci + build de producción"
+echo "==> Frontend: build de producción"
 cd "$FRONTEND_DIR"
-npm ci
-npx ng build --configuration production
+pnpm exec ng build --configuration production
 
 # 6) Permisos de uploads
 chown -R "$SERVICE_USER:$SERVICE_USER" "$BACKEND_DIR/uploads"

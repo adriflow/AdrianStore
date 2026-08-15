@@ -15,8 +15,6 @@ import {
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -26,11 +24,6 @@ import { CurrencyType } from './currency-type.enum';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { saveImages, MAX_FILE_SIZE, MAX_FILES } from '../security/uploads';
-
-const uploadPath = join(process.cwd(), 'uploads');
-if (!existsSync(uploadPath)) {
-  mkdirSync(uploadPath, { recursive: true });
-}
 
 @Controller('api/products')
 @ApiTags('products')
@@ -76,7 +69,7 @@ export class ProductController {
   @ApiResponse({ status: 201, description: 'Producto creado correctamente.', type: ProductResponseDto })
   async create(@UploadedFiles() images: Express.Multer.File[], @Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const imageUrls = await saveImages(images || [], uploadPath, backendUrl);
+    const imageUrls = await saveImages(images || [], backendUrl);
     const imageUrl = imageUrls[0] || '';
     return this.productService.create({ ...createProductDto, imageUrl, imageUrls });
   }
@@ -116,7 +109,7 @@ export class ProductController {
     @Body() updateProductDto: UpdateProductDto,
   ): Promise<ProductResponseDto> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const imageUrls = await saveImages(images || [], uploadPath, backendUrl);
+    const imageUrls = await saveImages(images || [], backendUrl);
     const imageUrl = imageUrls[0];
     return this.productService.update(id, { ...updateProductDto, imageUrl, imageUrls });
   }

@@ -17,6 +17,7 @@ const isTestEnvironment = () => process.env.NODE_ENV === 'test' || !!process.env
 
 let db: any = null;
 let initialized = false;
+let pgPool: Pool | null = null;
 
 async function initializeDatabase() {
   if (initialized && db) {
@@ -64,13 +65,25 @@ async function initializeDatabase() {
     return db;
   }
 
-  const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 5432,
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'adrianstore',
-  });
+  // DATABASE_URL (Neon/Supabase/Render/Railway, etc.) tiene prioridad sobre las variables sueltas.
+  // DB_SSL=false desactiva TLS (útil para Postgres local); por defecto se activa si hay DATABASE_URL.
+  const useSsl = process.env.DB_SSL
+    ? process.env.DB_SSL === 'true'
+    : !!process.env.DATABASE_URL;
+
+  const pool = process.env.DATABASE_URL
+    ? new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+      })
+    : new Pool({
+        host: process.env.DB_HOST || 'localhost',
+        port: Number(process.env.DB_PORT) || 5432,
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'adrianstore',
+        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+      });
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS products (
@@ -127,8 +140,17 @@ async function initializeDatabase() {
   `);
 
   db = drizzlePg(pool);
+  pgPool = pool;
   initialized = true;
   return db;
+}
+
+// Cierra el pool de PostgreSQL (no-op en modo SQLite). Se llama al recibir SIGTERM/SIGINT.
+async function closeDatabase(): Promise<void> {
+  if (pgPool) {
+    await pgPool.end();
+    pgPool = null;
+  }
 }
 
 async function initializeTestDb() {
@@ -139,4 +161,4 @@ async function initializeTestDb() {
   return db;
 }
 
-export { db, initializeDatabase, initializeTestDb };
+export { db, initializeDatabase, initializeTestDb, closeDatabase };

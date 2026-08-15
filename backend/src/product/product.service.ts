@@ -1,7 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { promises as fs } from 'fs';
 import { randomBytes } from 'crypto';
-import { basename, join } from 'path';
 import { db } from '../db';
 import { desc, eq } from 'drizzle-orm';
 import { products } from './product.schema';
@@ -13,6 +11,7 @@ import { CurrencyType } from './currency-type.enum';
 import { ProductType } from './product-type.enum';
 import { ProvinceType } from './province.enum';
 import { sanitizeText, sanitizePhone } from '../security/sanitize';
+import { deleteImages } from '../security/uploads';
 
 function generateUuidV7(): string {
   const timestampMs = BigInt(Date.now());
@@ -161,11 +160,7 @@ export class ProductService {
     const removed = updateProductDto.imageUrl
       ? oldImageUrls.filter((url) => !updateProductDto.imageUrls?.includes(url))
       : [];
-    for (const oldUrl of removed) {
-      const oldFileName = basename(oldUrl);
-      const oldFilePath = join(process.cwd(), 'uploads', oldFileName);
-      await fs.unlink(oldFilePath).catch(() => null);
-    }
+    await deleteImages(removed);
 
     return this.transform(product);
   }
@@ -185,6 +180,7 @@ export class ProductService {
       throw new NotFoundException('Producto no encontrado');
     }
     await db.delete(products).where(eq(products.id, id));
+    await deleteImages(this.parseImageUrls((rows[0] as any).imageUrls));
   }
 
 }

@@ -8,7 +8,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
-import { initializeDatabase } from './db';
+import { initializeDatabase, closeDatabase } from './db';
 import { requireEnv } from './security/env';
 import { MulterExceptionFilter } from './security/multer.filter';
 import { originGuard } from './security/origin.middleware';
@@ -27,10 +27,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.disable('x-powered-by');
+  // Detrás de Caddy/nginx/Cloudflare: confía en el primer proxy para IP real
+  // (afecta al rate limiting por IP del ThrottlerGuard).
+  app.set('trust proxy', 1);
   app.use(cookieParser());
 
   const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:4200';
   const backendOrigin = process.env.BACKEND_URL || 'http://localhost:3000';
+  const r2PublicOrigin = process.env.R2_PUBLIC_URL;
 
   app.enableCors({
     origin: frontendOrigin,
@@ -49,7 +53,7 @@ async function bootstrap() {
           fontSrc: ["'self'", 'https:', 'data:'],
           formAction: ["'self'"],
           frameAncestors: ["'none'"],
-          imgSrc: ["'self'", 'data:', backendOrigin],
+          imgSrc: r2PublicOrigin ? ["'self'", 'data:', backendOrigin, r2PublicOrigin] : ["'self'", 'data:', backendOrigin],
           connectSrc: ["'self'", backendOrigin],
           objectSrc: ["'none'"],
           scriptSrc: isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"],
@@ -93,6 +97,16 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
   }
+
+  app.enableShutdownHooks();
+  const shutdown = async (signal: string) => {
+    console.log(`Señal ${signal} recibida, cerrando backend...`);
+    await app.close();
+    await closeDatabase();
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   await app.listen(process.env.PORT || 3000);
   console.log('Backend AdrianStore escuchando en http://localhost:' + (process.env.PORT || 3000));

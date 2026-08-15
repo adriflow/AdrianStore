@@ -3,17 +3,10 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestj
 import { IsString, MaxLength } from 'class-validator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { AboutService } from './about.service';
 import { saveImages, MAX_FILE_SIZE } from '../security/uploads';
-
-const uploadPath = join(process.cwd(), 'uploads');
-if (!existsSync(uploadPath)) {
-  mkdirSync(uploadPath, { recursive: true });
-}
 
 class UpdateAboutDto {
   @IsString()
@@ -58,7 +51,7 @@ export class AboutController {
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ content: string; updatedAt: string; imageUrl?: string }> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const imageUrl = image ? (await saveImages([image], uploadPath, backendUrl))[0] : undefined;
+    const imageUrl = image ? (await saveImages([image], backendUrl))[0] : undefined;
     return this.aboutService.updateAbout(dto.content, imageUrl);
   }
 }

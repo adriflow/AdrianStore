@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { basename, join } from 'path';
-import { promises as fs } from 'fs';
 import { db } from '../db';
 import { about } from './about.schema';
 import { sanitizeText } from '../security/sanitize';
+import { deleteImages } from '../security/uploads';
 
 const ABOUT_ID = 'about';
 
@@ -44,8 +43,7 @@ export class AboutService {
 
     // Elimina la foto anterior si se reemplazó
     if (imageUrl && currentImageUrl && imageUrl !== currentImageUrl) {
-      const oldFile = join(process.cwd(), 'uploads', basename(currentImageUrl));
-      await fs.unlink(oldFile).catch(() => undefined);
+      await deleteImages([currentImageUrl]);
     }
 
     return { content: cleanContent, updatedAt, imageUrl: nextImageUrl };

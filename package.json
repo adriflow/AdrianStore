@@ -1,0 +1,12 @@
+{
+  "name": "adrianstore",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter adrianstore-backend start:dev",
+    "dev:frontend": "pnpm --filter adrianstore-frontend start",
+    "build:backend": "pnpm --filter adrianstore-backend build",
+    "build:frontend": "pnpm --filter adrianstore-frontend build",
+    "test:backend": "pnpm --filter adrianstore-backend test"
+  }
+}

@@ -1,0 +1,14 @@
+packages:
+  - backend
+  - frontend
+allowBuilds:
+  # bcrypt: módulo nativo, requiere compilar el binario para funcionar.
+  bcrypt: true
+  # esbuild: postinstall descarga el binario de la plataforma, lo usa el build de Angular.
+  esbuild: true
+  # @nestjs/core: postinstall solo es un aviso de donación (opencollective), no hace falta.
+  '@nestjs/core': false
+  # @scarf/scarf: telemetría de instalación (swagger-ui-dist), sin uso funcional, se bloquea.
+  '@scarf/scarf': false
+  # nice-napi: mejora opcional de prioridad de proceso para piscina (worker pool de Angular build), no requerido.
+  nice-napi: false
