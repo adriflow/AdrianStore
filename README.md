@@ -35,10 +35,13 @@ AdrianStore/
 │       ├── assets/     # logo.png + imágenes de fondo por categoría
 │       └── environments/ # environment.ts (dev) y environment.prod.ts (producción)
 ├── deploy/             # Kit de despliegue a producción
-│   ├── deploy.sh       # Script de instalación en servidor Debian/Ubuntu
-│   ├── Caddyfile       # Reverse proxy con HTTPS automático (recomendado)
-│   ├── nginx.conf      # Alternativa para nginx + Let's Encrypt
-│   └── adrianstore-backend.service  # Servicio systemd
+│   ├── docker-stack.yml    # Stack de Docker Swarm (backend detrás de Traefik)
+│   ├── stack.env.example   # Plantilla de variables para el stack de Swarm
+│   ├── deploy.sh       # Alternativa: instalación en un solo VPS Debian/Ubuntu
+│   ├── Caddyfile       # Reverse proxy con HTTPS automático (alternativa VPS)
+│   ├── nginx.conf      # Alternativa para nginx + Let's Encrypt (alternativa VPS)
+│   ├── backup.sh       # Backup de la base de datos (alternativa VPS)
+│   └── adrianstore-backend.service  # Servicio systemd (alternativa VPS)
 └── README.md
 ```
 
@@ -212,56 +215,90 @@ Base: `http://localhost:3000/api` · Documentación Swagger en `/api/docs` (solo
 
 ## Despliegue a producción
 
-El kit está en la carpeta `deploy/`. Pasos:
+Arquitectura actual, tres piezas independientes:
 
-1. Crea el repo clonado en el servidor en `/opt/adrianstore` (Debian/Ubuntu, Node 18+, PostgreSQL).
-2. Crea `backend/.env` a partir de `backend/.env.example` con valores reales:
-   - `JWT_SECRET` generado con `openssl rand -hex 48`
-   - `ADMIN_PASSWORD` con una contraseña fuerte
-   - `BACKEND_URL` y `FRONTEND_URL` con tu dominio HTTPS
-3. Compila el frontend apuntando al dominio real: edita `frontend/src/environments/environment.prod.ts` y ejecuta `ng build --configuration production`.
-4. Ejecuta `./deploy/deploy.sh tudominio.com`.
-5. Abre los puertos 80/443 en el firewall y apunta el DNS del dominio al servidor.
+| Pieza                | Dónde vive                                   | Config clave |
+|----------------------|-----------------------------------------------|--------------|
+| Frontend (Angular SPA) | Cloudflare Pages                             | `frontend/src/environments/environment.prod.ts` → `apiUrl` |
+| Backend (NestJS API) | Docker Swarm, detrás de tu Traefik (`traefik-public`), origin de Cloudflare | `deploy/docker-stack.yml` + `deploy/stack.env` |
+| DB + storage de imágenes | Supabase (Postgres + Storage)            | `DATABASE_URL` + `SUPABASE_*` en `backend/.env` |
 
-`deploy.sh` instala y compila el backend y el frontend, configura el admin (`setup-admin`), crea el servicio `adrianstore-backend` (systemd) e instala **Caddy** con HTTPS automático (Let's Encrypt). Como alternativa, `nginx.conf` cubre el mismo escenario con nginx.
+**Dominios**: el frontend y el backend van en **hostnames distintos** — el DNS de un nombre solo puede apuntar a un destino, y Cloudflare Pages ya consume el que le asignes. Este repo usa por defecto:
+- `adrianstore.ladetec.com` → Cloudflare Pages (frontend)
+- `api.adrianstore.ladetec.com` → tu Traefik/swarm, proxied por Cloudflare (backend)
 
-### Alternativa: contenedor
+Si usas otros dominios, ajusta `apiUrl` (frontend), y `BACKEND_URL`/`FRONTEND_URL`/`BACKEND_DOMAIN` (backend) en todos los pasos de abajo.
 
-`backend/Dockerfile` compila y empaqueta el backend (multi-stage, usa `pnpm deploy` para aislar `node_modules`). El contexto de build es la **raíz del repo** (es un workspace pnpm), no `backend/`:
-
-```bash
-docker build -f backend/Dockerfile -t adrianstore-backend .
-docker run -p 3000:3000 --env-file backend/.env adrianstore-backend
-```
-
-> Si `SUPABASE_*` no está configurado, las imágenes se guardan en `backend/uploads/` (disco local). En un contenedor sin volumen persistente se pierden en cada redeploy/reinicio — configura Supabase Storage (ver abajo) antes de desplegar en cualquier PaaS/swarm con filesystem efímero.
-
-### BBDD y storage de imágenes: Supabase
+### 1. Supabase (DB + storage de imágenes)
 
 1. Crea el proyecto en Supabase (te da Postgres + Storage).
 2. **DB**: Project Settings → Database → Connection string → conexión directa (`db.[project_ref].supabase.co:5432`, recomendada para este backend que mantiene un `pg.Pool` persistente; usa el pooler en modo sesión, puerto 5432, solo si tu red no soporta IPv6 — NO el 6543 de modo transacción). Va en `DATABASE_URL`; `DB_SSL` se activa solo si defines `DATABASE_URL`, Supabase siempre requiere TLS.
 3. **Storage**: Storage → New bucket → márcalo **público**.
 4. Storage → Settings → S3 Connection: ahí está `SUPABASE_STORAGE_REGION` y el botón para generar `SUPABASE_S3_ACCESS_KEY_ID` / `SUPABASE_S3_SECRET_ACCESS_KEY` (no son las API keys normales del proyecto).
-5. Completa en `backend/.env`: `SUPABASE_PROJECT_REF`, `SUPABASE_STORAGE_REGION`, `SUPABASE_STORAGE_BUCKET`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`.
+5. Guarda los 5 valores (`SUPABASE_PROJECT_REF`, `SUPABASE_STORAGE_REGION`, `SUPABASE_STORAGE_BUCKET`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`) — los necesitas en el paso 3.
 
-Con esas variables puestas, `create`/`update`/`delete` de productos y "Sobre mí" suben, sirven y borran las imágenes directo en Supabase Storage — sin tocar disco. Sin ellas, sigue funcionando igual que antes (disco local), útil para dev sin cuenta de Supabase.
+Sin estos 5 valores, el backend cae a disco local para las imágenes (`backend/uploads/`) — válido en dev, pierde archivos en cada redeploy en Swarm (contenedor sin volumen).
 
-### Alternativa: Docker Swarm (frontend en Cloudflare Pages, backend detrás de Traefik)
+### 2. Frontend → Cloudflare Pages
 
-`deploy/docker-stack.yml` despliega solo el backend en un swarm existente, conectado a la red overlay externa `traefik-public` (salida vía tu Traefik detrás de Cloudflare). DB y storage viven en Supabase — se llega a ambos por internet público (`DATABASE_URL` / `SUPABASE_*`), no por overlay network, así que el stack no necesita conectarse a ninguna red de Postgres. El frontend se sirve aparte, como sitio estático en Cloudflare Pages.
+1. Conecta el repo en el dashboard de Cloudflare Pages (Workers & Pages → Create → Pages → conectar a Git).
+2. Configuración de build:
+   - **Root directory**: `frontend`
+   - **Build command**: `pnpm install --frozen-lockfile && pnpm exec ng build --configuration production` (Pages corre `pnpm` nativamente si detecta `pnpm-lock.yaml` en la raíz del repo — si falla la detección, fuerza el gestor con la variable de entorno `PNPM_VERSION` o cambia a `corepack enable && pnpm install ...`).
+   - **Build output directory**: `dist/adrianstore-frontend` (relativo a `frontend/`, ver `frontend/angular.json` → `outputPath`).
+3. Antes de buildear, confirma `frontend/src/environments/environment.prod.ts` → `apiUrl` apunta al dominio real del backend (por defecto `https://api.adrianstore.ladetec.com/api`).
+4. Añade tu dominio custom (Pages → Custom domains) — Cloudflare gestiona el DNS y el certificado solo.
+
+### 3. Backend → Docker Swarm + Traefik
+
+`deploy/docker-stack.yml` despliega solo el backend, sin Postgres ni volúmenes (DB y storage viven en Supabase, se llega por internet público, no por overlay network). Solo necesita la red `traefik-public` ya existente en tu swarm.
 
 ```bash
+# Build (contexto = raíz del repo, es un workspace pnpm, no `backend/`)
 docker build -f backend/Dockerfile -t ghcr.io/vladimir1284/adrianstore-backend:latest .
 docker push ghcr.io/vladimir1284/adrianstore-backend:latest
-cp deploy/stack.env.example deploy/stack.env   # completar valores reales
+
+# Config
+cp deploy/stack.env.example deploy/stack.env   # completar con los valores de Supabase + JWT_SECRET + ADMIN_PASSWORD
 export $(grep -v '^#' deploy/stack.env | xargs)
+
+# Deploy
 docker stack deploy -c deploy/docker-stack.yml adrianstore
 ```
 
+Verifica:
+```bash
+docker service ps adrianstore_backend        # replica corriendo, sin reinicios en loop
+curl https://api.adrianstore.ladetec.com/api/health   # {"status":"ok"}
+docker service logs adrianstore_backend -f   # setup:admin, conexión a Supabase, etc.
+```
+
+Luego crea el admin (una vez, contra la DB de producción):
+```bash
+docker exec -it $(docker ps -q -f name=adrianstore_backend) node dist/setup-admin.js
+```
+
 Cosas a ajustar/verificar (no tengo acceso a tu swarm real):
-- Nombres de entrypoint/certresolver de tu Traefik (el stack asume la convención típica `http`/`https` + certresolver `le`; si tu Traefik usa otros nombres, cambia las labels).
-- El dominio del backend **no puede ser el mismo hostname** que apunta a Cloudflare Pages — usa un subdominio (p. ej. `api.adrianstore.ladetec.com`) para el backend y el dominio principal para Pages.
-- `replicas: 1` por diseño: el rate limiting (`ThrottlerGuard`) cuenta en memoria por réplica: escalar sin mover el throttler a un store compartido (Redis) rompe el límite real.
+- Nombres de entrypoint/certresolver de tu Traefik (el stack asume la convención típica `http`/`https` + certresolver `le`; si tu Traefik usa otros nombres, cambia las labels en `docker-stack.yml`).
+- `replicas: 1` por diseño: el rate limiting (`ThrottlerGuard`) cuenta en memoria por réplica — escalar sin mover el throttler a un store compartido (Redis) rompe el límite real.
+- Imagen en `ghcr.io/vladimir1284/adrianstore-backend`: no hay CI que la construya/publique todavía, es build+push manual (o cablea un workflow).
+
+### Alternativa: un solo VPS (sin Supabase/Swarm/Pages)
+
+Para un despliegue más simple, todo en un servidor (Postgres local + Caddy sirviendo frontend y backend), el kit original sigue en `deploy/`:
+
+1. Clona el repo en el servidor en `/opt/adrianstore` (Debian/Ubuntu, Node 18+, pnpm, PostgreSQL).
+2. Crea `backend/.env` a partir de `backend/.env.example` con valores reales (`JWT_SECRET` con `openssl rand -hex 48`, `ADMIN_PASSWORD`, `BACKEND_URL`/`FRONTEND_URL` con tu dominio HTTPS, `DB_HOST`/`DB_USER`/etc. para el Postgres local).
+3. Edita `frontend/src/environments/environment.prod.ts` con el dominio real y compila (`pnpm exec ng build --configuration production`).
+4. Ejecuta `./deploy/deploy.sh tudominio.com`.
+5. Abre los puertos 80/443 en el firewall y apunta el DNS del dominio al servidor.
+
+`deploy.sh` instala y compila el backend y el frontend, configura el admin (`setup-admin`), crea el servicio `adrianstore-backend` (systemd) e instala **Caddy** con HTTPS automático (Let's Encrypt). Como alternativa a Caddy, `nginx.conf` cubre el mismo escenario con nginx.
+
+También puedes correr el backend en un contenedor suelto (sin Swarm) con la misma imagen del paso 3 anterior:
+```bash
+docker run -p 3000:3000 --env-file backend/.env ghcr.io/vladimir1284/adrianstore-backend:latest
+```
 
 ---
 
