@@ -34,7 +34,10 @@ async function bootstrap() {
 
   const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:4200';
   const backendOrigin = process.env.BACKEND_URL || 'http://localhost:3000';
-  const r2PublicOrigin = process.env.R2_PUBLIC_URL;
+  // Origen público de las imágenes en Supabase Storage (host, no la URL completa del objeto).
+  const supabaseStorageOrigin = process.env.SUPABASE_PROJECT_REF
+    ? `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`
+    : undefined;
 
   app.enableCors({
     origin: frontendOrigin,
@@ -53,7 +56,9 @@ async function bootstrap() {
           fontSrc: ["'self'", 'https:', 'data:'],
           formAction: ["'self'"],
           frameAncestors: ["'none'"],
-          imgSrc: r2PublicOrigin ? ["'self'", 'data:', backendOrigin, r2PublicOrigin] : ["'self'", 'data:', backendOrigin],
+          imgSrc: supabaseStorageOrigin
+            ? ["'self'", 'data:', backendOrigin, supabaseStorageOrigin]
+            : ["'self'", 'data:', backendOrigin],
           connectSrc: ["'self'", backendOrigin],
           objectSrc: ["'none'"],
           scriptSrc: isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"],

@@ -87,14 +87,14 @@ Variables de entorno (`backend/.env`):
 |-------------------------|------------------------------------------------|-------------------------|
 | `PORT`                  | Puerto del backend                             | `3000`                  |
 | `NODE_ENV`              | `production` activa CSP estricto, cookies `secure` y oculta Swagger | `development` |
-| `DATABASE_URL`          | Cadena de conexión única (Neon/Supabase/Render/Railway...); si está definida, tiene prioridad sobre `DB_HOST`/`DB_USER`/etc. | - |
+| `DATABASE_URL`          | Cadena de conexión única (Supabase, Neon, Render, Railway...); si está definida, tiene prioridad sobre `DB_HOST`/`DB_USER`/etc. | - |
 | `DB_SSL`                | Fuerza (`true`) o desactiva (`false`) TLS con Postgres; por defecto se activa solo si hay `DATABASE_URL` | - |
 | `DB_HOST` / `DB_PORT`   | Host y puerto de PostgreSQL (si no usas `DATABASE_URL`)         | `localhost` / `5432`    |
 | `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y nombre de la base de datos (si no usas `DATABASE_URL`) | `postgres` / - / `adrianstore` |
 | `JWT_SECRET`            | Secreto para firmar tokens (**obligatorio**)   | -                       |
 | `BACKEND_URL`           | URL pública del backend (para URLs de imágenes) | `http://localhost:3000` |
 | `FRONTEND_URL`          | Origen permitido (CORS y validación de origen) | `http://localhost:4200` |
-| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` / `R2_PUBLIC_URL` | Storage de imágenes en Cloudflare R2; si faltan, cae a disco local (`backend/uploads/`) | - |
+| `SUPABASE_PROJECT_REF` / `SUPABASE_STORAGE_REGION` / `SUPABASE_STORAGE_BUCKET` / `SUPABASE_S3_ACCESS_KEY_ID` / `SUPABASE_S3_SECRET_ACCESS_KEY` | Storage de imágenes en Supabase Storage; si faltan, cae a disco local (`backend/uploads/`) | - |
 | `ADMIN_USERNAME`        | Usuario administrador (`pnpm run setup:admin`)  | `adrian0502`            |
 | `ADMIN_PASSWORD`        | Contraseña del administrador                   | -                       |
 | `THROTTLE_LIMIT` / `THROTTLE_TTL` | Límite global de peticiones por minuto | `20` / `60000` |
@@ -234,20 +234,21 @@ docker build -f backend/Dockerfile -t adrianstore-backend .
 docker run -p 3000:3000 --env-file backend/.env adrianstore-backend
 ```
 
-> Si `R2_*` no está configurado, las imágenes se guardan en `backend/uploads/` (disco local). En un contenedor sin volumen persistente se pierden en cada redeploy/reinicio — configura R2 (ver abajo) antes de desplegar en cualquier PaaS con filesystem efímero.
+> Si `SUPABASE_*` no está configurado, las imágenes se guardan en `backend/uploads/` (disco local). En un contenedor sin volumen persistente se pierden en cada redeploy/reinicio — configura Supabase Storage (ver abajo) antes de desplegar en cualquier PaaS/swarm con filesystem efímero.
 
-### Storage de imágenes: Cloudflare R2
+### BBDD y storage de imágenes: Supabase
 
-1. Crea el bucket: `wrangler r2 bucket create adrianstore-uploads`
-2. Actívale una URL pública (dashboard del bucket → Settings → "Public Development URL", o `wrangler r2 bucket domain add` con tu propio dominio).
-3. Crea un API token con permiso **Object Read & Write** sobre ese bucket (dashboard → R2 → Manage API tokens) — te da `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`.
-4. Completa en `backend/.env`: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (sin barra final).
+1. Crea el proyecto en Supabase (te da Postgres + Storage).
+2. **DB**: Project Settings → Database → Connection string → conexión directa (`db.[project_ref].supabase.co:5432`, recomendada para este backend que mantiene un `pg.Pool` persistente; usa el pooler en modo sesión, puerto 5432, solo si tu red no soporta IPv6 — NO el 6543 de modo transacción). Va en `DATABASE_URL`; `DB_SSL` se activa solo si defines `DATABASE_URL`, Supabase siempre requiere TLS.
+3. **Storage**: Storage → New bucket → márcalo **público**.
+4. Storage → Settings → S3 Connection: ahí está `SUPABASE_STORAGE_REGION` y el botón para generar `SUPABASE_S3_ACCESS_KEY_ID` / `SUPABASE_S3_SECRET_ACCESS_KEY` (no son las API keys normales del proyecto).
+5. Completa en `backend/.env`: `SUPABASE_PROJECT_REF`, `SUPABASE_STORAGE_REGION`, `SUPABASE_STORAGE_BUCKET`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`.
 
-Con esas 5 variables puestas, `create`/`update`/`delete` de productos y "Sobre mí" suben, sirven y borran las imágenes directo en R2 — sin tocar disco. Sin ellas, sigue funcionando igual que antes (disco local), útil para dev sin cuenta de Cloudflare.
+Con esas variables puestas, `create`/`update`/`delete` de productos y "Sobre mí" suben, sirven y borran las imágenes directo en Supabase Storage — sin tocar disco. Sin ellas, sigue funcionando igual que antes (disco local), útil para dev sin cuenta de Supabase.
 
 ### Alternativa: Docker Swarm (frontend en Cloudflare Pages, backend detrás de Traefik)
 
-`deploy/docker-stack.yml` despliega solo el backend (sin Postgres) en un swarm existente, conectado a dos redes overlay externas: `traefik-public` (salida vía tu Traefik detrás de Cloudflare) y `postgres-public` (para llegar a un Postgres ya desplegado en otro stack). El frontend se sirve aparte, como sitio estático en Cloudflare Pages.
+`deploy/docker-stack.yml` despliega solo el backend en un swarm existente, conectado a la red overlay externa `traefik-public` (salida vía tu Traefik detrás de Cloudflare). DB y storage viven en Supabase — se llega a ambos por internet público (`DATABASE_URL` / `SUPABASE_*`), no por overlay network, así que el stack no necesita conectarse a ninguna red de Postgres. El frontend se sirve aparte, como sitio estático en Cloudflare Pages.
 
 ```bash
 docker build -f backend/Dockerfile -t ghcr.io/vladimir1284/adrianstore-backend:latest .
@@ -258,7 +259,6 @@ docker stack deploy -c deploy/docker-stack.yml adrianstore
 ```
 
 Cosas a ajustar/verificar (no tengo acceso a tu swarm real):
-- Nombre real del servicio Postgres en `postgres-public` para `DATABASE_URL` (`docker service ls` en ese stack).
 - Nombres de entrypoint/certresolver de tu Traefik (el stack asume la convención típica `http`/`https` + certresolver `le`; si tu Traefik usa otros nombres, cambia las labels).
 - El dominio del backend **no puede ser el mismo hostname** que apunta a Cloudflare Pages — usa un subdominio (p. ej. `api.adrianstore.ladetec.com`) para el backend y el dominio principal para Pages.
 - `replicas: 1` por diseño: el rate limiting (`ThrottlerGuard`) cuenta en memoria por réplica: escalar sin mover el throttler a un store compartido (Redis) rompe el límite real.

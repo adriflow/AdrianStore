@@ -1,9 +1,9 @@
-# Stack de Swarm para el backend de AdrianStore. NO incluye Postgres: se conecta
-# a `postgres-public` para llegar a una base ya desplegada en otro stack.
+# Stack de Swarm para el backend de AdrianStore. Sin Postgres ni volúmenes: DB y
+# storage de imágenes viven en Supabase (gestionado, fuera del swarm), se llega a
+# ambos por internet público vía DATABASE_URL / SUPABASE_* — no por overlay network.
 #
-# Redes externas requeridas (deben existir ya en el swarm):
+# Red externa requerida (debe existir ya en el swarm):
 #   docker network create --driver overlay traefik-public   # si no existe
-#   docker network create --driver overlay postgres-public  # si no existe
 #
 # Uso:
 #   1. Construir y publicar la imagen (contexto = raíz del repo, no backend/):
@@ -12,9 +12,9 @@
 #   2. export $(grep -v '^#' deploy/stack.env | xargs)   # docker stack deploy NO lee .env solo
 #   3. docker stack deploy -c deploy/docker-stack.yml adrianstore
 #
-# Sin volúmenes: las imágenes van a Cloudflare R2 (ver backend/.env.example), el
+# Sin volúmenes: las imágenes van a Supabase Storage (ver backend/.env.example), el
 # contenedor es stateless -> puede correr con cualquier número de réplicas... con
-# la excepción del rate limiting (ver nota en healthcheck/deploy más abajo).
+# la excepción del rate limiting (ver nota en deploy más abajo).
 
 version: "3.8"
 
@@ -23,15 +23,15 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/vladimir1284/adrianstore-backend}:${BACKEND_TAG:-latest}
     networks:
       - traefik-public
-      - postgres-public
     environment:
       NODE_ENV: production
       PORT: "3000"
-      # Host de DATABASE_URL = nombre del servicio Postgres tal como lo resuelve
-      # postgres-public (p. ej. postgres://user:pass@postgres:5432/adrianstore).
-      # AJUSTAR: no conozco el nombre real del servicio en tu stack de Postgres.
+      # Conexión directa a Supabase (servicio persistente, no serverless): puerto 5432 en
+      # db.<project_ref>.supabase.co. Si tu red no soporta IPv6, usa el pooler en modo
+      # sesión (puerto 5432 en aws-0-<region>.pooler.supabase.com) — NO el 6543 de modo
+      # transacción, no es para un pg.Pool de conexiones persistentes.
       DATABASE_URL: ${DATABASE_URL}
-      DB_SSL: ${DB_SSL:-false}
+      DB_SSL: ${DB_SSL:-true}
       JWT_SECRET: ${JWT_SECRET}
       BACKEND_URL: ${BACKEND_URL:-https://api.adrianstore.ladetec.com}
       FRONTEND_URL: ${FRONTEND_URL:-https://adrianstore.ladetec.com}
@@ -41,11 +41,11 @@ services:
       THROTTLE_TTL: ${THROTTLE_TTL:-60000}
       LOGIN_THROTTLE_LIMIT: ${LOGIN_THROTTLE_LIMIT:-5}
       LOGIN_THROTTLE_TTL: ${LOGIN_THROTTLE_TTL:-60000}
-      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_BUCKET: ${R2_BUCKET}
-      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      SUPABASE_PROJECT_REF: ${SUPABASE_PROJECT_REF}
+      SUPABASE_STORAGE_REGION: ${SUPABASE_STORAGE_REGION}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET}
+      SUPABASE_S3_ACCESS_KEY_ID: ${SUPABASE_S3_ACCESS_KEY_ID}
+      SUPABASE_S3_SECRET_ACCESS_KEY: ${SUPABASE_S3_SECRET_ACCESS_KEY}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
@@ -82,6 +82,4 @@ services:
 
 networks:
   traefik-public:
-    external: true
-  postgres-public:
     external: true

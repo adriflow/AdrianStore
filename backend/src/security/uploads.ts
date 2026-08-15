@@ -17,36 +17,39 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
 
 const localUploadPath = join(process.cwd(), 'uploads');
 
-// R2 (o cualquier bucket S3-compatible) es el storage real de producción. Si no está
+// Supabase Storage (API S3-compatible) es el storage real de producción. Si no está
 // configurado (dev local, tests), se usa disco local igual que antes — mismo patrón
 // que db.ts con DATABASE_URL: la presencia de las variables decide el backend.
-function hasR2Config(): boolean {
+function hasSupabaseConfig(): boolean {
   return (
-    !!process.env.R2_ACCOUNT_ID &&
-    !!process.env.R2_ACCESS_KEY_ID &&
-    !!process.env.R2_SECRET_ACCESS_KEY &&
-    !!process.env.R2_BUCKET &&
-    !!process.env.R2_PUBLIC_URL
+    !!process.env.SUPABASE_PROJECT_REF &&
+    !!process.env.SUPABASE_STORAGE_REGION &&
+    !!process.env.SUPABASE_S3_ACCESS_KEY_ID &&
+    !!process.env.SUPABASE_S3_SECRET_ACCESS_KEY &&
+    !!process.env.SUPABASE_STORAGE_BUCKET
   );
+}
+
+// URL pública de un bucket público de Supabase Storage (fija, no configurable):
+// https://<project_ref>.supabase.co/storage/v1/object/public/<bucket>
+function supabasePublicBaseUrl(): string {
+  return `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/${process.env.SUPABASE_STORAGE_BUCKET}`;
 }
 
 let s3Client: S3Client | null = null;
 function getS3Client(): S3Client {
   if (!s3Client) {
     s3Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      forcePathStyle: true,
+      region: process.env.SUPABASE_STORAGE_REGION,
+      endpoint: `https://${process.env.SUPABASE_PROJECT_REF}.storage.supabase.co/storage/v1/s3`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY!,
       },
     });
   }
   return s3Client;
-}
-
-function r2PublicUrl(filename: string): string {
-  return `${(process.env.R2_PUBLIC_URL as string).replace(/\/$/, '')}/${filename}`;
 }
 
 // Detecta el tipo real de la imagen por sus bytes mágicos (no confía en el mimetype del cliente).
@@ -74,11 +77,11 @@ export function detectImageExtension(buffer: Buffer): string | null {
   return null;
 }
 
-// Valida cada imagen (tamaño, mimetype, bytes mágicos) y la sube a R2 (o disco local si R2
-// no está configurado), con nombre aleatorio y extensión derivada del contenido real.
+// Valida cada imagen (tamaño, mimetype, bytes mágicos) y la sube a Supabase Storage (o disco
+// local si no está configurado), con nombre aleatorio y extensión derivada del contenido real.
 export async function saveImages(files: Express.Multer.File[], baseUrl: string): Promise<string[]> {
-  const useR2 = hasR2Config();
-  if (!useR2 && !existsSync(localUploadPath)) {
+  const useSupabase = hasSupabaseConfig();
+  if (!useSupabase && !existsSync(localUploadPath)) {
     await mkdir(localUploadPath, { recursive: true });
   }
 
@@ -97,16 +100,16 @@ export async function saveImages(files: Express.Multer.File[], baseUrl: string):
       }
       const filename = `${Date.now()}-${randomBytes(8).toString('hex')}.${ext}`;
 
-      if (useR2) {
+      if (useSupabase) {
         await getS3Client().send(
           new PutObjectCommand({
-            Bucket: process.env.R2_BUCKET,
+            Bucket: process.env.SUPABASE_STORAGE_BUCKET,
             Key: filename,
             Body: file.buffer,
             ContentType: CONTENT_TYPE_BY_EXT[ext],
           }),
         );
-        urls.push(r2PublicUrl(filename));
+        urls.push(`${supabasePublicBaseUrl()}/${filename}`);
       } else {
         await writeFile(join(localUploadPath, filename), file.buffer);
         urls.push(`${baseUrl}/uploads/${filename}`);
@@ -119,16 +122,16 @@ export async function saveImages(files: Express.Multer.File[], baseUrl: string):
   }
 }
 
-// Borra imágenes por URL, en R2 o disco local según dónde vivan. Nunca lanza: es limpieza
-// best-effort (una imagen que ya no existe, o un fallo de red al borrar, no debe romper la
-// operación que la disparó).
+// Borra imágenes por URL, en Supabase Storage o disco local según dónde vivan. Nunca lanza:
+// es limpieza best-effort (una imagen que ya no existe, o un fallo de red al borrar, no debe
+// romper la operación que la disparó).
 export async function deleteImages(urls: string[]): Promise<void> {
-  const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, '');
+  const publicBaseUrl = hasSupabaseConfig() ? supabasePublicBaseUrl() : null;
   await Promise.all(
     urls.filter(Boolean).map(async (url) => {
-      if (publicUrl && url.startsWith(publicUrl)) {
+      if (publicBaseUrl && url.startsWith(publicBaseUrl)) {
         await getS3Client()
-          .send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET, Key: basename(url) }))
+          .send(new DeleteObjectCommand({ Bucket: process.env.SUPABASE_STORAGE_BUCKET, Key: basename(url) }))
           .catch(() => undefined);
       } else {
         await unlink(join(localUploadPath, basename(url))).catch(() => undefined);
