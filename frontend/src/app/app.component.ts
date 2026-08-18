@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Product, ProductService } from './product.service';
@@ -36,6 +36,9 @@ export class AppComponent implements OnInit, OnDestroy {
   ];
   selectedCategory = 'all';
   selectedCategoryLabel = 'Todos';
+  showCategoryDropdown = false;
+  searchTerm = '';
+  cleaningOrphans = false;
 
   priceBounds = { min: 0, max: 0 };
   minPrice = 0;
@@ -185,6 +188,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     if (this.observer) {
       this.observer.disconnect();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (this.showCategoryDropdown && !target.closest('.category-dropdown')) {
+      this.showCategoryDropdown = false;
     }
   }
 
@@ -397,6 +408,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(): void {
+    const matchesSearch = (product: Product) =>
+      !this.searchTerm || product.name.toLowerCase().includes(this.searchTerm.toLowerCase());
     const inCategory = (product: Product) =>
       this.selectedCategory === 'all' || product.type?.toLowerCase() === this.selectedCategory;
     const inPrice = (product: Product) => {
@@ -405,7 +418,7 @@ export class AppComponent implements OnInit, OnDestroy {
     };
     const inProvince = (product: Product) =>
       this.selectedProvince === 'all' || (product.province || 'Camagüey') === this.selectedProvince;
-    this.filteredProducts = this.products.filter((product) => inCategory(product) && inPrice(product) && inProvince(product));
+    this.filteredProducts = this.products.filter((product) => matchesSearch(product) && inCategory(product) && inPrice(product) && inProvince(product));
   }
 
   get availableProvinces(): CatalogOption[] {
@@ -424,6 +437,36 @@ export class AppComponent implements OnInit, OnDestroy {
   selectProvince(province: string): void {
     this.selectedProvince = province;
     this.applyFilter();
+  }
+
+  toggleCategoryDropdown(): void {
+    this.showCategoryDropdown = !this.showCategoryDropdown;
+  }
+
+  selectCategoryAndClose(value: string): void {
+    this.selectedCategory = value;
+    this.selectedCategoryLabel = this.catalogOptions.find(o => o.value === value)?.label || 'Todos';
+    this.showCategoryDropdown = false;
+    this.applyFilter();
+  }
+
+  cleanOrphans(): void {
+    this.cleaningOrphans = true;
+    this.productService.cleanOrphans().subscribe({
+      next: (res) => {
+        this.cleaningOrphans = false;
+        if (res.deleted > 0) {
+          alert(`Se eliminaron ${res.deleted} producto(s) con imágenes faltantes.`);
+          this.loadProducts();
+        } else {
+          alert('No se encontraron productos huérfanos.');
+        }
+      },
+      error: () => {
+        this.cleaningOrphans = false;
+        alert('Error al limpiar productos huérfanos.');
+      },
+    });
   }
 
   updatePriceBounds(): void {

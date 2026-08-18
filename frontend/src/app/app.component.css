@@ -50,6 +50,41 @@
   background: #9fd278;
 }
 
+/* ===== Dropdown de categorías (móvil) ===== */
+.category-dropdown {
+  position: relative;
+}
+
+.category-dropdown-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgb(243 244 246);
+  background: white;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  opacity: 0;
+  transform: translateY(-0.5rem) scaleY(0.95);
+  transform-origin: top;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.category-dropdown-menu.open {
+  opacity: 1;
+  transform: translateY(0) scaleY(1);
+  pointer-events: auto;
+}
+
+@media (min-width: 640px) {
+  .category-dropdown {
+    display: none !important;
+  }
+}
+
 /* ===== Slider de rango de precios (doble bola) ===== */
 .price-range {
   position: absolute;

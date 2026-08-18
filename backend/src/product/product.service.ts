@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { db } from '../db';
 import { desc, eq } from 'drizzle-orm';
 import { products } from './product.schema';
@@ -181,6 +183,49 @@ export class ProductService {
     }
     await db.delete(products).where(eq(products.id, id));
     await deleteImages(this.parseImageUrls((rows[0] as any).imageUrls));
+  }
+
+  async cleanOrphanProducts(): Promise<{ deleted: number; ids: string[] }> {
+    const allRows = await db.select().from(products);
+    const localUploadPath = join(process.cwd(), 'uploads');
+    const isLocal = !(
+      process.env.SUPABASE_PROJECT_REF &&
+      process.env.SUPABASE_STORAGE_REGION &&
+      process.env.SUPABASE_S3_ACCESS_KEY_ID &&
+      process.env.SUPABASE_S3_SECRET_ACCESS_KEY &&
+      process.env.SUPABASE_STORAGE_BUCKET
+    );
+
+    const orphanIds: string[] = [];
+
+    for (const row of allRows) {
+      const urls = this.parseImageUrls((row as any).imageUrls);
+      if (row.imageUrl) urls.push(row.imageUrl);
+
+      if (urls.length === 0) {
+        orphanIds.push(row.id);
+        continue;
+      }
+
+      if (isLocal) {
+        const hasValid = urls.some((url) => {
+          const match = url.match(/\/uploads\/(.+)$/);
+          if (!match) return false;
+          return existsSync(join(localUploadPath, match[1]));
+        });
+        if (!hasValid) orphanIds.push(row.id);
+      }
+    }
+
+    for (const id of orphanIds) {
+      const rows = await db.select().from(products).where(eq(products.id, id)).limit(1);
+      if (rows.length > 0) {
+        await deleteImages(this.parseImageUrls((rows[0] as any).imageUrls));
+      }
+      await db.delete(products).where(eq(products.id, id));
+    }
+
+    return { deleted: orphanIds.length, ids: orphanIds };
   }
 
 }

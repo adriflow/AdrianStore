@@ -90,7 +90,7 @@ async function bootstrap() {
     prefix: '/uploads/',
     index: false,
     dotfiles: 'deny',
-    fallthrough: false,
+    fallthrough: true,
   });
 
   if (!isProduction) {

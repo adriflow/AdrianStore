@@ -81,4 +81,11 @@ export class ProductService {
   updateAbout(formData: FormData): Observable<AboutInfo> {
     return this.http.put<AboutInfo>(this.aboutUrl, formData, { withCredentials: true });
   }
+
+  /** Clean orphan products with missing images (admin) */
+  cleanOrphans(): Observable<{ deleted: number; ids: string[] }> {
+    return this.http.post<{ deleted: number; ids: string[] }>(
+      `${this.apiUrl}/clean-orphans`, {}, { withCredentials: true }
+    );
+  }
 }

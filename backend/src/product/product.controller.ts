@@ -130,6 +130,14 @@ export class ProductController {
     return { message: 'Producto eliminado' };
   }
 
+  @Post('clean-orphans')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Eliminar productos sin imágenes válidas' })
+  @ApiResponse({ status: 200, description: 'Limpieza completada.' })
+  async cleanOrphans() {
+    return this.productService.cleanOrphanProducts();
+  }
+
   @Get(':id/whatsapp')
   @ApiOperation({ summary: 'Obtener enlace de WhatsApp para producto' })
   @ApiResponse({ status: 200, description: 'Enlace de WhatsApp generado', schema: { example: 'https://wa.me/5359028922?text=Hola%2C%20me%20interesa%20el%20producto%20Aud%C3%ADfonos%20inal%C3%A1mbricos%20(%24%201299.99%20USD).%20%C2%BFEst%C3%A1%20disponible%3F' } })

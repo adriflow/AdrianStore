@@ -302,9 +302,9 @@
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                 </div>
               </div>
-              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
-              <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-leaf-700"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">{{ product.type | titlecase }}</span>
+              <span class="absolute right-2 top-2 inline-flex max-w-[40%] items-center gap-1 truncate rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:right-3 sm:top-3 sm:max-w-none sm:px-2.5 sm:py-1 sm:text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 text-leaf-700 sm:h-3.5 sm:w-3.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 {{ product.province || 'Camagüey' }}
               </span>
             </button>
@@ -414,7 +414,49 @@
         <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ filteredProducts.length }} productos</span>
       </div>
 
-      <div class="reveal mt-8 flex flex-wrap gap-2">
+      <div class="reveal relative mt-6">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()"
+          placeholder="Buscar producto..."
+          class="w-full rounded-full border border-neutral-200 bg-white py-2.5 pl-10 pr-4 text-sm text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-leaf-400 focus:ring-2 focus:ring-leaf-100"
+        />
+      </div>
+
+      <div class="reveal relative mt-6 sm:hidden category-dropdown">
+        <button
+          type="button"
+          (click)="toggleCategoryDropdown(); $event.stopPropagation()"
+          class="inline-flex w-full items-center justify-between gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 transition hover:border-leaf-300"
+        >
+          <span class="flex items-center gap-1.5">
+            <span *ngIf="iconForCategory(selectedCategory)" class="[&_svg]:h-4 [&_svg]:w-4" [innerHTML]="safeIcon(iconForCategory(selectedCategory))"></span>
+            {{ selectedCategoryLabel }}
+          </span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition-transform duration-200" [class.rotate-180]="showCategoryDropdown"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="category-dropdown-menu" [class.open]="showCategoryDropdown">
+          <button
+            *ngFor="let category of catalogOptions"
+            type="button"
+            (click)="selectCategoryAndClose(category.value)"
+            class="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium transition hover:bg-leaf-50"
+            [class.bg-leaf-50]="selectedCategory === category.value"
+            [class.text-leaf-700]="selectedCategory === category.value"
+            [class.text-neutral-600]="selectedCategory !== category.value"
+          >
+            <span *ngIf="iconForCategory(category.value)" class="[&_svg]:h-4 [&_svg]:w-4" [innerHTML]="safeIcon(iconForCategory(category.value))"></span>
+            {{ category.label }}
+            <svg *ngIf="selectedCategory === category.value" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ml-auto h-4 w-4 text-leaf-600"><path d="M20 6 9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="reveal mt-6 hidden flex-wrap gap-2 sm:flex">
         <button
           *ngFor="let category of catalogOptions"
           type="button"
@@ -539,11 +581,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
               </div>
             </div>
-            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
-            <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-leaf-700"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-              {{ product.province || 'Camagüey' }}
-            </span>
+              <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">{{ product.type | titlecase }}</span>
+              <span class="absolute right-2 top-2 inline-flex max-w-[40%] items-center gap-1 truncate rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:right-3 sm:top-3 sm:max-w-none sm:px-2.5 sm:py-1 sm:text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 text-leaf-700 sm:h-3.5 sm:w-3.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ product.province || 'Camagüey' }}
+              </span>
           </button>
           <div *ngIf="productImages(product).length > 1" class="flex justify-center gap-1.5 pt-3">
             <button
@@ -748,7 +790,17 @@
 
         <div class="mt-14 flex flex-wrap items-end justify-between gap-4">
           <h2 class="font-display text-2xl font-bold text-neutral-900">Productos del catálogo</h2>
-          <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ products.length }} productos</span>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              (click)="cleanOrphans()"
+              [disabled]="cleaningOrphans"
+              class="rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+            >
+              {{ cleaningOrphans ? 'Limpiando...' : 'Limpiar huérfanos' }}
+            </button>
+            <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ products.length }} productos</span>
+          </div>
         </div>
 
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -771,9 +823,9 @@
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                 </div>
               </div>
-              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
-              <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-leaf-700"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">{{ product.type | titlecase }}</span>
+              <span class="absolute right-2 top-2 inline-flex max-w-[40%] items-center gap-1 truncate rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 backdrop-blur sm:right-3 sm:top-3 sm:max-w-none sm:px-2.5 sm:py-1 sm:text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 text-leaf-700 sm:h-3.5 sm:w-3.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 {{ product.province || 'Camagüey' }}
               </span>
             </button>
