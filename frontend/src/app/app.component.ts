@@ -36,6 +36,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ];
   selectedCategory = 'all';
   selectedCategoryLabel = 'Todos';
+  searchTerm = '';
 
   priceBounds = { min: 0, max: 0 };
   minPrice = 0;
@@ -405,7 +406,20 @@ export class AppComponent implements OnInit, OnDestroy {
     };
     const inProvince = (product: Product) =>
       this.selectedProvince === 'all' || (product.province || 'Camagüey') === this.selectedProvince;
-    this.filteredProducts = this.products.filter((product) => inCategory(product) && inPrice(product) && inProvince(product));
+    const inSearch = (product: Product) => {
+      const term = this.searchTerm.trim().toLowerCase();
+      return !term || product.name.toLowerCase().includes(term);
+    };
+    this.filteredProducts = this.products.filter((product) => inCategory(product) && inPrice(product) && inProvince(product) && inSearch(product));
+  }
+
+  onSearch(): void {
+    this.applyFilter();
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.applyFilter();
   }
 
   get availableProvinces(): CatalogOption[] {
