@@ -1,6 +1,6 @@
 # Build context = raíz del repo (monorepo pnpm), no backend/:
 #   docker build -f backend/Dockerfile -t adrianstore-backend .
-FROM node:20-slim AS build
+FROM node:22-slim AS build
 WORKDIR /app
 RUN corepack enable
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -12,7 +12,7 @@ RUN pnpm --filter adrianstore-backend run build
 # listo para copiar tal cual a la imagen final.
 RUN pnpm --filter adrianstore-backend --prod deploy /out
 
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /out/node_modules ./node_modules
