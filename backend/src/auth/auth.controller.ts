@@ -36,7 +36,7 @@ export class AuthController {
     const result = await this.authService.login(loginDto.username, loginDto.password);
     res.cookie('jwt', result.token, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       secure: isProduction,
       maxAge: 60 * 60 * 1000,
     });
