@@ -20,7 +20,7 @@ version: "3.8"
 
 services:
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/vladimir1284/adrianstore-backend}:${BACKEND_TAG:-latest}
+    image: ${BACKEND_IMAGE:-ghcr.io/adriflow/adrianstore-backend}:${BACKEND_TAG:-latest}
     networks:
       - traefik-public
     environment:

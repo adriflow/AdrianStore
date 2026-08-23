@@ -253,10 +253,13 @@ Sin estos 5 valores, el backend cae a disco local para las imágenes (`backend/u
 
 `deploy/docker-stack.yml` despliega solo el backend, sin Postgres ni volúmenes (DB y storage viven en Supabase, se llega por internet público, no por overlay network). Solo necesita la red `traefik-public` ya existente en tu swarm.
 
+La imagen se construye y publica sola: `.github/workflows/backend-build-push.yml` corre en cada push a `main` que toque `backend/**` (o el lockfile/workspace) y sube `ghcr.io/adriflow/adrianstore-backend:latest` + `:<sha>` con el `GITHUB_TOKEN` del propio repo (sin secrets extra). Primer run: el paquete queda privado por default en GitHub — pásalo a público a mano (Packages → adrianstore-backend → Package settings → Change visibility) si tu host de swarm va a hacer `docker pull` sin login.
+
+Build manual (solo si necesitás algo fuera del flujo de CI, p. ej. probar un cambio antes de mergear):
 ```bash
 # Build (contexto = raíz del repo, es un workspace pnpm, no `backend/`)
-docker build -f backend/Dockerfile -t ghcr.io/vladimir1284/adrianstore-backend:latest .
-docker push ghcr.io/vladimir1284/adrianstore-backend:latest
+docker build -f backend/Dockerfile -t ghcr.io/adriflow/adrianstore-backend:latest .
+docker push ghcr.io/adriflow/adrianstore-backend:latest
 
 # Config
 cp deploy/stack.env.example deploy/stack.env   # completar con los valores de Supabase + JWT_SECRET + ADMIN_PASSWORD
@@ -281,7 +284,8 @@ docker exec -it $(docker ps -q -f name=adrianstore_backend) node dist/setup-admi
 Cosas a ajustar/verificar (no tengo acceso a tu swarm real):
 - Nombres de entrypoint/certresolver de tu Traefik (el stack asume la convención típica `http`/`https` + certresolver `le`; si tu Traefik usa otros nombres, cambia las labels en `docker-stack.yml`).
 - `replicas: 1` por diseño: el rate limiting (`ThrottlerGuard`) cuenta en memoria por réplica — escalar sin mover el throttler a un store compartido (Redis) rompe el límite real.
-- Imagen en `ghcr.io/vladimir1284/adrianstore-backend`: no hay CI que la construya/publique todavía, es build+push manual (o cablea un workflow).
+- Imagen en `ghcr.io/adriflow/adrianstore-backend`, publicada por `.github/workflows/backend-build-push.yml` en cada push a `main`.
+- Visibilidad del paquete: primer push lo crea privado, cambialo a público en GitHub si el host de swarm no va a hacer `docker login`.
 
 ### Alternativa: un solo VPS (sin Supabase/Swarm/Pages)
 
@@ -297,7 +301,7 @@ Para un despliegue más simple, todo en un servidor (Postgres local + Caddy sirv
 
 También puedes correr el backend en un contenedor suelto (sin Swarm) con la misma imagen del paso 3 anterior:
 ```bash
-docker run -p 3000:3000 --env-file backend/.env ghcr.io/vladimir1284/adrianstore-backend:latest
+docker run -p 3000:3000 --env-file backend/.env ghcr.io/adriflow/adrianstore-backend:latest
 ```
 
 ---
