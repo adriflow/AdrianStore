@@ -43,8 +43,8 @@ export class AppComponent implements OnInit, OnDestroy {
   maxPrice = 0;
   selectedProvince = 'all';
 
-  adminUsername = 'admin';
-  adminPassword = 'admin123';
+  adminUsername = '';
+  adminPassword = '';
   adminLoginError = '';
   failedAttempts = 0;
   lockUntil: number | null = null;

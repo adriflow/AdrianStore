@@ -306,10 +306,76 @@ docker run -p 3000:3000 --env-file backend/.env ghcr.io/adriflow/adrianstore-bac
 
 ---
 
-## Roles
+## Autenticación y modo admin
 
-- **Admin**: inicia sesión con `ADMIN_USERNAME`/`ADMIN_PASSWORD`. Accede al panel para crear, editar y eliminar productos, y editar "Sobre mí".
-- **Invitado**: solo ve el catálogo y abre WhatsApp para hacer pedidos.
+Solo existen dos roles, y no hay registro público: **`admin`** (un único usuario, provisto por variables de entorno) e **invitado** (cualquiera sin sesión). No hay endpoint para crear cuentas nuevas ni para asignar el rol admin a otro usuario desde la API.
+
+### Modelo de usuario
+
+Tabla `users` (`backend/src/users/user.schema.ts`): `id` (uuid), `username`, `password_hash` (bcrypt, 10 rondas), `role` (string libre, pero solo `RolesGuard` reconoce `"admin"`). `UsersService` (`backend/src/users/users.service.ts`) solo expone `findByUsername` y `createUser` — no hay update de perfil, ni endpoint de "cambiar contraseña" para el propio usuario.
+
+### Cómo se crea/actualiza el admin
+
+No hay seed automático del admin. Se gestiona a mano con `pnpm run setup:admin` (`backend/src/setup-admin.ts`), que lee `ADMIN_USERNAME`/`ADMIN_PASSWORD` del `.env`:
+
+- Si el usuario no existe, lo crea con `role: 'admin'`.
+- Si ya existe, le actualiza el hash de contraseña (permite rotar la contraseña sin tocar la DB a mano).
+- Siempre borra el usuario legado `admin123` si existiera (limpieza de una versión anterior que sembraba ese usuario por defecto).
+- Valida contraseña de 8-72 caracteres (bcrypt trunca a partir de 72); si falta alguna variable o la contraseña no cumple, termina con `process.exit(1)` sin tocar la DB.
+
+Solo puede haber un admin "oficial" por convención (un solo `ADMIN_USERNAME`), pero nada en el código impide insertar más filas con `role: 'admin'` directamente en la DB — no hay UI ni endpoint para eso.
+
+### Flujo de login (backend)
+
+1. `POST /api/auth/login` (`backend/src/auth/auth.controller.ts`) recibe `{ username, password }`, validado con `class-validator`: `username` máx. 64 caracteres y `^[A-Za-z0-9_@.-]+$` (rechaza espacios/caracteres raros antes de tocar la DB), `password` no vacío, máx. 72.
+2. Limitado por `@Throttle` con `LOGIN_THROTTLE_LIMIT`/`LOGIN_THROTTLE_TTL` (5 intentos/minuto por defecto), **por IP y a nivel de servidor** — independiente de cualquier bloqueo en el navegador.
+3. `AuthService.validateUser` (`backend/src/auth/auth.service.ts`) busca el usuario y compara con `bcrypt.compare`. Si no hay match, `401 Unauthorized` (mensaje genérico, no distingue "usuario no existe" de "contraseña incorrecta").
+4. Si es válido, firma un JWT (`JwtService`, `backend/src/auth/auth.module.ts`) con payload `{ sub: id, username, role }`, expiración fija de **1 hora**, secreto = `JWT_SECRET` (obligatorio, sin default — `requireEnv` tira si falta).
+5. La respuesta pone el token en una cookie `jwt`: `httpOnly`, `sameSite: 'lax'` en dev / `'none'` en producción, `secure` solo en producción, `maxAge` 1 hora. **También** devuelve el token en el body JSON (`{ message, token }`), pero el frontend actual lo ignora y trabaja solo con la cookie.
+
+### Cómo se protegen las rutas
+
+Dos guards encadenados con `@UseGuards(JwtAuthGuard, RolesGuard)`:
+
+- **`JwtAuthGuard`** (`backend/src/auth/auth.guard.ts`) — envoltorio de Passport (`AuthGuard('jwt')`). Usa `JwtStrategy` (`backend/src/auth/jwt.strategy.ts`), que extrae el token primero de la cookie `jwt` y, si no está, de `Authorization: Bearer <token>`. Rechaza si el JWT es inválido, está corrompido, mal firmado o expiró (`ignoreExpiration: false`). Al pasar, deja `req.user = { sub, username, role }` (el payload del token, no relee la DB — si el rol de un usuario cambia en la DB, sus tokens ya emitidos siguen con el rol viejo hasta que expiren).
+- **`RolesGuard`** (`backend/src/auth/roles.guard.ts`) — corre después, exige `req.user.role === 'admin'`; si no, `403 Forbidden`. Es un chequeo simple hardcodeado a `'admin'`, no hay decorador `@Roles(...)` genérico ni soporte multi-rol.
+
+Aplicado en:
+
+| Endpoint | Guard |
+|----------|-------|
+| `GET /api/auth/me` | solo `JwtAuthGuard` (cualquier usuario autenticado, no exige admin) |
+| `POST/PATCH/DELETE /api/products` | `JwtAuthGuard` + `RolesGuard` |
+| `PUT /api/about` | `JwtAuthGuard` + `RolesGuard` |
+
+No hay refresh token ni renovación silenciosa: a la hora, el usuario tiene que volver a loguearse. Tampoco hay revocación server-side (blocklist/versión de token) — un JWT robado sigue siendo válido hasta que expira, aunque se llame a `/logout` (que solo borra la cookie del navegador que la pidió).
+
+### Logout
+
+`POST /api/auth/logout` solo hace `res.clearCookie('jwt')`. Es estateless: no invalida el token en el servidor, solo borra la cookie del cliente que llamó al endpoint. Si el mismo token se copió a otro cliente (o vía el `token` que devuelve el body de `/login`), sigue funcionando hasta expirar.
+
+### CSRF / origen
+
+`originGuard` (`backend/src/security/origin.middleware.ts`) corre en todas las peticiones `POST/PUT/PATCH/DELETE`: si el header `Origin` (o, en su defecto, `Referer`) no coincide con `FRONTEND_URL`, responde `403` antes de llegar a ningún controller/guard. Es la defensa contra CSRF (la cookie `jwt` no tiene `SameSite=strict`, así que esto no es opcional).
+
+### Modo admin en el frontend
+
+No hay routing de Angular ni guard de ruta: es una sola página (`app.component.ts`) con un flag `isAdmin: boolean` y una vista `activeView`. Nada carga código de admin por separado; el HTML del panel simplemente no se muestra (`*ngIf`-style) cuando `isAdmin` es `false`. Esto es solo UX — la seguridad real la hacen los guards del backend, no este flag.
+
+- Al iniciar (`ngOnInit`), llama `GET /api/auth/me` con `withCredentials: true`; si la cookie `jwt` es válida y `role === 'admin'`, pone `isAdmin = true` y `activeView = 'admin'`. Si no hay cookie o expiró, queda como invitado sin mostrar error.
+- El formulario de login vive siempre en la vista "admin" (`selectView('admin')` la muestra a cualquiera; solo cambia si loguea con éxito).
+- `loginAdmin()` llama `POST /api/auth/login` con `withCredentials: true`; el navegador guarda la cookie `HttpOnly` sola, el frontend nunca toca el JWT ni lo guarda en `localStorage`/`sessionStorage`.
+- Todas las peticiones que mutan datos (`createProduct`, `updateProduct`, `deleteProduct`, `updateAbout`) van con `withCredentials: true` para que el navegador adjunte la cookie; si expiró, el backend responde 401/403 y el frontend simplemente deja el error sin manejar en varios casos (no hay redirect automático a login ni renovación).
+- **Bloqueo de intentos fallidos es solo cosmético en el cliente**: tras 3 fallos, guarda `adminLockUntil` en `localStorage` y bloquea el formulario 5 minutos (`app.component.ts` → `loginAsAdmin`/`restoreLock`). Se salta borrando `localStorage` o usando otro navegador — la protección real de fuerza bruta es el throttling del backend (`LOGIN_THROTTLE_LIMIT`).
+- `logoutAdmin()` llama `POST /api/auth/logout` y resetea `isAdmin`/vista a invitado.
+
+### Limitaciones conocidas
+
+- Un solo admin "con nombre" por diseño (via `ADMIN_USERNAME`); no hay gestión de múltiples usuarios admin desde la app.
+- Sin refresh token: sesión muere a la hora en punto, sin aviso previo en el frontend.
+- Sin revocación server-side de JWT: robar la cookie o el token del body de `/login` da acceso hasta que expira (1h), incluso después de "cerrar sesión" en otro cliente.
+- `RolesGuard` está hardcodeado a `role === 'admin'`; agregar un segundo rol con permisos distintos requeriría tocar ese guard.
+- El formulario de login arranca vacío (`app.component.ts:46-47`); ya no precarga `admin`/`admin123` (versión anterior lo hacía, `setup-admin.ts` purga ese usuario legado igualmente).
 
 ---
 
