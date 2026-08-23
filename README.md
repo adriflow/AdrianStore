@@ -225,7 +225,7 @@ Arquitectura actual, tres piezas independientes:
 
 **Dominios**: el frontend y el backend van en **hostnames distintos** — el DNS de un nombre solo puede apuntar a un destino, y Cloudflare Pages ya consume el que le asignes. Este repo usa por defecto:
 - `adrianstore.ladetec.com` → Cloudflare Pages (frontend)
-- `api.adrianstore.ladetec.com` → tu Traefik/swarm, proxied por Cloudflare (backend)
+- `api_adrianstore.ladetec.com` → tu Traefik/swarm, proxied por Cloudflare (backend)
 
 Si usas otros dominios, ajusta `apiUrl` (frontend), y `BACKEND_URL`/`FRONTEND_URL`/`BACKEND_DOMAIN` (backend) en todos los pasos de abajo.
 
@@ -246,7 +246,7 @@ Sin estos 5 valores, el backend cae a disco local para las imágenes (`backend/u
    - **Root directory**: `frontend`
    - **Build command**: `pnpm install --frozen-lockfile && pnpm exec ng build --configuration production` (Pages corre `pnpm` nativamente si detecta `pnpm-lock.yaml` en la raíz del repo — si falla la detección, fuerza el gestor con la variable de entorno `PNPM_VERSION` o cambia a `corepack enable && pnpm install ...`).
    - **Build output directory**: `dist/adrianstore-frontend` (relativo a `frontend/`, ver `frontend/angular.json` → `outputPath`).
-3. Antes de buildear, confirma `frontend/src/environments/environment.prod.ts` → `apiUrl` apunta al dominio real del backend (por defecto `https://api.adrianstore.ladetec.com/api`).
+3. Antes de buildear, confirma `frontend/src/environments/environment.prod.ts` → `apiUrl` apunta al dominio real del backend (por defecto `https://api_adrianstore.ladetec.com/api`).
 4. Añade tu dominio custom (Pages → Custom domains) — Cloudflare gestiona el DNS y el certificado solo.
 
 ### 3. Backend → Docker Swarm + Traefik
@@ -272,7 +272,7 @@ docker stack deploy -c deploy/docker-stack.yml adrianstore
 Verifica:
 ```bash
 docker service ps adrianstore_backend        # replica corriendo, sin reinicios en loop
-curl https://api.adrianstore.ladetec.com/api/health   # {"status":"ok"}
+curl https://api_adrianstore.ladetec.com/api/health   # {"status":"ok"}
 docker service logs adrianstore_backend -f   # setup:admin, conexión a Supabase, etc.
 ```
 
