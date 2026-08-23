@@ -70,10 +70,10 @@ services:
         # (esto sigue la convención típica http/https + certresolver "le"; si tu
         # traefik-public usa otros nombres, cámbialos aquí).
         - traefik.http.routers.adrianstore-backend-http.rule=Host(`${BACKEND_DOMAIN:-api_adrianstore.ladetec.com}`)
-        - traefik.http.routers.adrianstore-backend-http.entrypoints=http
+        - traefik.http.routers.adrianstore-backend-http.entrypoints=web
         - traefik.http.routers.adrianstore-backend-http.middlewares=https-redirect
         - traefik.http.routers.adrianstore-backend-https.rule=Host(`${BACKEND_DOMAIN:-api_adrianstore.ladetec.com}`)
-        - traefik.http.routers.adrianstore-backend-https.entrypoints=https
+        - traefik.http.routers.adrianstore-backend-https.entrypoints=websecure
         - traefik.http.routers.adrianstore-backend-https.tls=true
         - traefik.http.routers.adrianstore-backend-https.tls.certresolver=le
         - traefik.http.services.adrianstore-backend.loadbalancer.server.port=3000
