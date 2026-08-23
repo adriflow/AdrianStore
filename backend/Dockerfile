@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile --filter adrianstore-backend...
 RUN pnpm --filter adrianstore-backend run build
 # pnpm deploy aísla el paquete backend con su node_modules ya "flattened" (sin symlinks al store),
 # listo para copiar tal cual a la imagen final.
-RUN pnpm --filter adrianstore-backend --prod deploy /out
+RUN pnpm --filter adrianstore-backend --prod deploy /out --legacy
 
 FROM node:22-slim AS runtime
 WORKDIR /app
