@@ -9,6 +9,7 @@
 .reveal.reveal-in {
   opacity: 1;
   transform: none;
+  will-change: auto;
 }
 
 .reveal-delay-1 {

@@ -131,9 +131,9 @@
       <!-- Hero -->
       <section class="relative overflow-hidden">
         <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div class="absolute -right-32 -top-32 h-[30rem] w-[30rem] rounded-full bg-leaf-200/60 blur-3xl"></div>
-          <div class="absolute -left-40 top-40 h-96 w-96 rounded-full bg-leaf-100/80 blur-3xl"></div>
-          <div class="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-mist blur-3xl"></div>
+          <div class="absolute -right-[12%] -top-[14%] aspect-square w-[65%] max-w-[30rem] rounded-full bg-leaf-200/60 blur-3xl"></div>
+          <div class="absolute -left-[16%] top-[38%] aspect-square w-[42%] max-w-[24rem] rounded-full bg-leaf-100/80 blur-3xl"></div>
+          <div class="absolute bottom-[-4%] right-[22%] aspect-square w-[32%] max-w-[18rem] rounded-full bg-mist blur-3xl"></div>
         </div>
 
         <div class="relative mx-auto grid max-w-7xl gap-14 px-4 pb-24 pt-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-32 lg:pt-24">
@@ -380,7 +380,7 @@
       <!-- Vista previa de Sobre mí -->
       <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div class="reveal grid items-center gap-10 rounded-[2.5rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-12 lg:grid-cols-[0.7fr_1.3fr] lg:p-16">
-          <div class="relative mx-auto h-44 w-44 overflow-hidden rounded-full border-4 border-white bg-white shadow-soft">
+          <div class="relative mx-auto aspect-square w-[58%] max-w-[11rem] overflow-hidden rounded-full border-4 border-white bg-white shadow-soft">
             <img *ngIf="aboutImageUrl" [src]="aboutImageUrl" alt="Foto de Adrián" class="h-full w-full object-cover" />
             <img *ngIf="!aboutImageUrl" src="assets/logo.png" alt="Logo AdrianStore" class="h-full w-full object-contain" />
             <span class="absolute -right-2 -top-2 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-mist text-leaf-700">
@@ -438,36 +438,134 @@
         </div>
       </div>
 
-      <div class="reveal mt-8 flex flex-wrap gap-2">
+      <div class="reveal relative z-40 mt-8 flex items-center gap-2">
         <button
-          *ngFor="let category of catalogOptions"
           type="button"
-          (click)="selectCategory(category.value)"
-          class="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition"
-          [class.bg-leaf-600]="selectedCategory === category.value"
-          [class.text-white]="selectedCategory === category.value"
-          [class.border-leaf-600]="selectedCategory === category.value"
-          [class.border-neutral-200]="selectedCategory !== category.value"
-          [class.bg-white]="selectedCategory !== category.value"
-          [class.text-neutral-600]="selectedCategory !== category.value"
-          [class.hover:border-leaf-300]="selectedCategory !== category.value"
+          (click)="selectCategory('all')"
+          class="inline-flex shrink-0 items-center rounded-full border px-4 py-2 text-sm font-medium transition"
+          [class.bg-leaf-600]="selectedCategory === 'all'"
+          [class.text-white]="selectedCategory === 'all'"
+          [class.border-leaf-600]="selectedCategory === 'all'"
+          [class.border-neutral-200]="selectedCategory !== 'all'"
+          [class.bg-white]="selectedCategory !== 'all'"
+          [class.text-neutral-600]="selectedCategory !== 'all'"
+          [class.hover:border-leaf-300]="selectedCategory !== 'all'"
         >
-          <span *ngIf="iconForCategory(category.value)" class="[&_svg]:h-4 [&_svg]:w-4" [innerHTML]="safeIcon(iconForCategory(category.value))"></span>
-          {{ category.label }}
+          Todos
         </button>
+
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleCategoryMenu($event)"
+            aria-haspopup="listbox"
+            [attr.aria-expanded]="categoryMenuOpen"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition"
+            [class.bg-leaf-600]="selectedCategory !== 'all'"
+            [class.text-white]="selectedCategory !== 'all'"
+            [class.border-leaf-600]="selectedCategory !== 'all'"
+            [class.border-neutral-200]="selectedCategory === 'all'"
+            [class.bg-white]="selectedCategory === 'all'"
+            [class.text-neutral-600]="selectedCategory === 'all'"
+            [class.hover:border-leaf-300]="selectedCategory === 'all'"
+          >
+            <span *ngIf="selectedCategory !== 'all' && iconForCategory(selectedCategory)" class="[&_svg]:h-4 [&_svg]:w-4" [innerHTML]="safeIcon(iconForCategory(selectedCategory))"></span>
+            {{ selectedCategory === 'all' ? 'Categorías' : selectedCategoryLabel }}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition-transform duration-200" [class.rotate-180]="categoryMenuOpen"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          <div
+            *ngIf="categoryMenuOpen"
+            (click)="$event.stopPropagation()"
+            class="absolute left-0 top-full z-40 mt-2 w-max min-w-[10rem] max-w-[calc(100vw-7.5rem)] overflow-y-auto rounded-2xl border border-neutral-200 bg-white p-2 shadow-lift"
+          >
+            <button
+              *ngFor="let category of selectableCategories"
+              type="button"
+              (click)="selectCategory(category.value)"
+              class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
+              [class.bg-leaf-50]="selectedCategory === category.value"
+              [class.text-leaf-800]="selectedCategory === category.value"
+              [class.text-neutral-600]="selectedCategory !== category.value"
+              [class.hover:bg-leaf-50]="selectedCategory !== category.value"
+            >
+              <span class="flex items-center gap-2.5">
+                <span *ngIf="iconForCategory(category.value)" class="text-leaf-600 [&_svg]:h-4 [&_svg]:w-4" [innerHTML]="safeIcon(iconForCategory(category.value))"></span>
+                {{ category.label }}
+              </span>
+              <span class="text-xs text-neutral-400">{{ countFor(category.value) }}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="priceBounds.max > priceBounds.min" class="reveal mt-8 rounded-3xl border border-neutral-900/5 bg-white p-6 shadow-soft">
+      <div *ngIf="products.length && (priceBounds.max > priceBounds.min || availablePriceCurrencies.length > 1)" class="reveal relative z-30 mt-8 rounded-3xl border border-neutral-900/5 bg-white p-6 shadow-soft">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p class="text-sm font-semibold text-neutral-900">Filtrar por precio</p>
-            <p class="text-xs text-neutral-400">Arrastra las bolas para ajustar el rango</p>
+            <p class="text-xs text-neutral-400">Elige la moneda y arrastra las bolas para ajustar el rango</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Mín <strong class="ml-1 text-neutral-900">{{ formatAmount(minPrice) }}</strong></span>
+            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Mín <strong class="ml-1 text-neutral-900">{{ formatAmount(minPrice) }}{{ selectedPriceCurrency === 'all' ? '' : ' ' + selectedPriceCurrency }}</strong></span>
             <span class="text-neutral-300">–</span>
-            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Máx <strong class="ml-1 text-neutral-900">{{ formatAmount(maxPrice) }}</strong></span>
+            <span class="rounded-full bg-neutral-100 px-3 py-1 text-neutral-600">Máx <strong class="ml-1 text-neutral-900">{{ formatAmount(maxPrice) }}{{ selectedPriceCurrency === 'all' ? '' : ' ' + selectedPriceCurrency }}</strong></span>
             <button type="button" (click)="resetPrice()" class="ml-1 text-xs font-semibold text-leaf-700 transition hover:text-leaf-800">Restablecer</button>
+          </div>
+        </div>
+
+        <div class="relative z-30 mt-4 flex items-center gap-2">
+          <span class="shrink-0 whitespace-nowrap text-xs font-semibold uppercase tracking-widest text-neutral-400">Moneda:</span>
+          <div class="relative">
+            <button
+              type="button"
+              (click)="togglePriceMenu($event)"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="priceMenuOpen"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+              [class.bg-leaf-600]="selectedPriceCurrency !== 'all'"
+              [class.text-white]="selectedPriceCurrency !== 'all'"
+              [class.border-leaf-600]="selectedPriceCurrency !== 'all'"
+              [class.border-neutral-200]="selectedPriceCurrency === 'all'"
+              [class.bg-white]="selectedPriceCurrency === 'all'"
+              [class.text-neutral-600]="selectedPriceCurrency === 'all'"
+              [class.hover:border-leaf-300]="selectedPriceCurrency === 'all'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+              {{ selectedPriceCurrency === 'all' ? 'Todas las monedas' : selectedPriceCurrency }}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition-transform duration-200" [class.rotate-180]="priceMenuOpen"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <div
+              *ngIf="priceMenuOpen"
+              (click)="$event.stopPropagation()"
+              class="absolute left-0 top-full z-40 mt-2 w-max min-w-[11rem] max-w-[calc(100vw-7.5rem)] overflow-y-auto rounded-2xl border border-neutral-200 bg-white p-2 shadow-lift"
+            >
+              <button
+                type="button"
+                (click)="selectPriceCurrency('all')"
+                class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
+                [class.bg-leaf-50]="selectedPriceCurrency === 'all'"
+                [class.text-leaf-800]="selectedPriceCurrency === 'all'"
+                [class.text-neutral-600]="selectedPriceCurrency !== 'all'"
+                [class.hover:bg-leaf-50]="selectedPriceCurrency !== 'all'"
+              >
+                Todas las monedas
+                <span class="text-xs text-neutral-400">{{ countForCurrency('all') }}</span>
+              </button>
+              <button
+                *ngFor="let currency of availablePriceCurrencies"
+                type="button"
+                (click)="selectPriceCurrency(currency)"
+                class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
+                [class.bg-leaf-50]="selectedPriceCurrency === currency"
+                [class.text-leaf-800]="selectedPriceCurrency === currency"
+                [class.text-neutral-600]="selectedPriceCurrency !== currency"
+                [class.hover:bg-leaf-50]="selectedPriceCurrency !== currency"
+              >
+                {{ currency }}
+                <span class="text-xs text-neutral-400">{{ countForCurrency(currency) }}</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="relative mt-6 h-6">
@@ -500,12 +598,12 @@
         </div>
       </div>
 
-      <div class="reveal mt-6 flex flex-wrap items-center gap-2">
-        <span class="mr-1 text-sm font-semibold text-neutral-700">Provincia:</span>
+      <div class="reveal mt-6 flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap">
+        <span class="mr-1 shrink-0 whitespace-nowrap text-sm font-semibold text-neutral-700">Provincia:</span>
         <button
           type="button"
           (click)="selectProvince('all')"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition"
+          class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition"
           [class.bg-leaf-600]="selectedProvince === 'all'"
           [class.text-white]="selectedProvince === 'all'"
           [class.border-leaf-600]="selectedProvince === 'all'"
@@ -520,7 +618,7 @@
           *ngFor="let province of availableProvinces"
           type="button"
           (click)="selectProvince(province.value)"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition"
+          class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition"
           [class.bg-leaf-600]="selectedProvince === province.value"
           [class.text-white]="selectedProvince === province.value"
           [class.border-leaf-600]="selectedProvince === province.value"
@@ -621,7 +719,7 @@
       </div>
 
       <div *ngIf="!isAdmin" class="reveal reveal-delay-1 mt-10 rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-12">
-        <div *ngIf="aboutImageUrl" class="mx-auto mb-8 h-40 w-40 overflow-hidden rounded-full border-4 border-leaf-100 shadow-soft">
+        <div *ngIf="aboutImageUrl" class="mx-auto mb-8 aspect-square w-[58%] max-w-[10rem] overflow-hidden rounded-full border-4 border-leaf-100 shadow-soft">
           <img [src]="aboutImageUrl" alt="Foto de Adrián" class="h-full w-full object-cover" />
         </div>
         <p class="whitespace-pre-wrap text-lg leading-relaxed text-neutral-600">{{ aboutContent || 'Aún no hay contenido en esta sección.' }}</p>
@@ -840,41 +938,73 @@
   </main>
 
   <!-- ===== LIGHTBOX ===== -->
-  <div *ngIf="lightboxProduct" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm" (click)="closeLightbox()">
-    <div class="relative flex max-h-full w-full max-w-4xl flex-col gap-4" (click)="$event.stopPropagation()">
-      <button type="button" (click)="closeLightbox()" class="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Cerrar">
+  <div *ngIf="lightboxProduct" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-4" (click)="closeLightbox()">
+    <div class="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-neutral-900 shadow-lift md:max-h-[88vh] md:flex-row" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        (click)="closeLightbox()"
+        aria-label="Cerrar vista previa"
+        class="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 transition hover:bg-black/80"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
 
-      <div class="flex h-[65vh] items-center justify-center overflow-hidden rounded-3xl bg-neutral-900">
+      <div class="relative flex h-[38vh] shrink-0 items-center justify-center bg-neutral-950 md:h-auto md:w-[55%]">
         <img [src]="productImages(lightboxProduct)[lightboxIndex]" [alt]="lightboxProduct.name" class="max-h-full max-w-full object-contain" />
-      </div>
 
-      <div class="flex items-center justify-center gap-4">
-        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="prevLightboxImage()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Anterior">
+        <button
+          *ngIf="productImages(lightboxProduct).length > 1"
+          type="button"
+          (click)="prevLightboxImage()"
+          aria-label="Imagen anterior"
+          class="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div class="flex gap-2 overflow-x-auto pb-1">
+        <button
+          *ngIf="productImages(lightboxProduct).length > 1"
+          type="button"
+          (click)="nextLightboxImage()"
+          aria-label="Imagen siguiente"
+          class="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <div class="flex min-h-0 flex-1 flex-col gap-4 p-6">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-300">{{ lightboxProduct.type | titlecase }}<span *ngIf="lightboxProduct.province"> · {{ lightboxProduct.province }}</span></span>
+          <h3 class="mt-1.5 font-display text-2xl font-bold leading-tight text-white">{{ lightboxProduct.name }}</h3>
+          <p class="mt-1.5 font-display text-lg font-semibold text-leaf-300">{{ formatPrice(lightboxProduct) }}</p>
+        </div>
+
+        <div *ngIf="lightboxProduct.acceptsTransfer" class="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5"/></svg>
+          Acepta transferencia
+        </div>
+
+        <div class="flex min-h-24 flex-1 flex-col">
+          <p class="text-xs font-semibold uppercase tracking-widest text-neutral-500">Descripción</p>
+          <div class="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
+            <p class="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">{{ lightboxProduct.description || 'Este producto no tiene descripción.' }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="productImages(lightboxProduct).length > 1" class="flex gap-2 overflow-x-auto pb-1">
           <img
             *ngFor="let img of productImages(lightboxProduct); let i = index"
             [src]="img"
             [alt]="lightboxProduct.name + ' ' + (i + 1)"
             (click)="lightboxIndex = i"
-            class="h-16 w-16 shrink-0 cursor-pointer rounded-xl object-cover transition"
-            [class.ring-2]="i === lightboxIndex"
-            [class.ring-leaf-400]="i === lightboxIndex"
+            class="h-14 w-14 shrink-0 cursor-pointer rounded-xl border-2 object-cover transition"
+            [class.border-leaf-400]="i === lightboxIndex"
+            [class.border-transparent]="i !== lightboxIndex"
             [class.opacity-50]="i !== lightboxIndex"
           />
         </div>
-        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="nextLightboxImage()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="Siguiente">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-      </div>
 
-      <p class="text-center font-display text-lg font-semibold text-white">{{ lightboxProduct.name }}</p>
-      <p class="text-center text-sm font-medium text-leaf-300">{{ formatPrice(lightboxProduct) }}</p>
-      <div class="flex justify-center">
-        <a [href]="whatsappLink(lightboxProduct)" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-leaf-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf-600">
+        <a [href]="whatsappLink(lightboxProduct)" target="_blank" rel="noreferrer" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-leaf-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-leaf-600">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
           Pedir por WhatsApp
         </a>

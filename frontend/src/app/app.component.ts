@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Product, ProductService } from './product.service';
@@ -37,10 +37,13 @@ export class AppComponent implements OnInit, OnDestroy {
   selectedCategory = 'all';
   selectedCategoryLabel = 'Todos';
   searchTerm = '';
+  categoryMenuOpen = false;
+  priceMenuOpen = false;
 
   priceBounds = { min: 0, max: 0 };
   minPrice = 0;
   maxPrice = 0;
+  selectedPriceCurrency = 'USD';
   selectedProvince = 'all';
 
   adminUsername = '';
@@ -197,6 +200,46 @@ export class AppComponent implements OnInit, OnDestroy {
     this.menuOpen = false;
   }
 
+  get selectableCategories(): CatalogOption[] {
+    return this.catalogOptions.filter((option) => option.value !== 'all');
+  }
+
+  toggleCategoryMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.priceMenuOpen = false;
+    this.categoryMenuOpen = !this.categoryMenuOpen;
+  }
+
+  closeCategoryMenu(): void {
+    this.categoryMenuOpen = false;
+  }
+
+  togglePriceMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.categoryMenuOpen = false;
+    this.priceMenuOpen = !this.priceMenuOpen;
+  }
+
+  closePriceMenu(): void {
+    this.priceMenuOpen = false;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeCategoryMenu();
+    this.closePriceMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.lightboxProduct) {
+      this.closeLightbox();
+      return;
+    }
+    this.closeCategoryMenu();
+    this.closePriceMenu();
+  }
+
   get recentProducts(): Product[] {
     return this.products.slice(0, 6);
   }
@@ -255,6 +298,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   selectView(view: ViewName): void {
     this.closeMenu();
+    this.closeCategoryMenu();
+    this.closePriceMenu();
     if (view === 'admin' && !this.isAdmin) {
       this.previousView = this.activeView;
       this.activeView = 'admin';
@@ -371,6 +416,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.adminLoginError = '';
         this.selectedCategory = 'all';
         this.selectedCategoryLabel = 'Todos';
+        this.selectedPriceCurrency = 'USD';
+        this.updatePriceBounds();
         this.activeView = 'inicio';
         this.scheduleReveals();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -390,6 +437,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.applyFilter();
         this.updateSelectedCategoryLabel();
         this.isLoading = false;
+        this.scheduleReveals();
       },
       error: () => {
         this.isLoading = false;
@@ -400,7 +448,11 @@ export class AppComponent implements OnInit, OnDestroy {
   applyFilter(): void {
     const inCategory = (product: Product) =>
       this.selectedCategory === 'all' || product.type?.toLowerCase() === this.selectedCategory;
+    const productCurrency = (product: Product) => (product.currency || 'CUP').toUpperCase();
     const inPrice = (product: Product) => {
+      if (this.selectedPriceCurrency !== 'all' && productCurrency(product) !== this.selectedPriceCurrency) {
+        return false;
+      }
       const price = Number(product.price) || 0;
       return price >= this.minPrice && price <= this.maxPrice;
     };
@@ -441,18 +493,50 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   updatePriceBounds(): void {
-    if (!this.products.length) {
+    if (this.selectedPriceCurrency !== 'all') {
+      const exists = this.products.some((product) => (product.currency || 'CUP').toUpperCase() === this.selectedPriceCurrency);
+      if (!exists) {
+        this.selectedPriceCurrency = 'all';
+      }
+    }
+    const pool =
+      this.selectedPriceCurrency === 'all'
+        ? this.products
+        : this.products.filter((product) => (product.currency || 'CUP').toUpperCase() === this.selectedPriceCurrency);
+    if (!pool.length) {
       this.priceBounds = { min: 0, max: 0 };
       this.minPrice = 0;
       this.maxPrice = 0;
       return;
     }
-    const prices = this.products.map((product) => Number(product.price) || 0);
+    const prices = pool.map((product) => Number(product.price) || 0);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     this.priceBounds = { min, max };
     this.minPrice = min;
     this.maxPrice = max;
+  }
+
+  get availablePriceCurrencies(): string[] {
+    const seen = new Set<string>();
+    for (const product of this.products) {
+      seen.add((product.currency || 'CUP').toUpperCase());
+    }
+    return Array.from(seen).sort();
+  }
+
+  countForCurrency(code: string): number {
+    if (code === 'all') {
+      return this.products.length;
+    }
+    return this.products.filter((product) => (product.currency || 'CUP').toUpperCase() === code).length;
+  }
+
+  selectPriceCurrency(currency: string): void {
+    this.selectedPriceCurrency = currency;
+    this.priceMenuOpen = false;
+    this.updatePriceBounds();
+    this.applyFilter();
   }
 
   get priceStep(): number {
@@ -505,6 +589,7 @@ export class AppComponent implements OnInit, OnDestroy {
   selectCategory(category: string): void {
     this.selectedCategory = category;
     this.categoryImageFailed = false;
+    this.categoryMenuOpen = false;
     this.activeView = 'catalogo';
     this.applyFilter();
     this.updateSelectedCategoryLabel();
