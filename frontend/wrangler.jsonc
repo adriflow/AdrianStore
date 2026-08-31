@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "adrianstore-frontend",
+  "compatibility_date": "2026-08-31",
+  "assets": {
+    "directory": "./dist/adrianstore-frontend"
+  },
+  "routes": [
+    { "pattern": "adrianstore.ladetec.com", "custom_domain": true }
+  ]
+}

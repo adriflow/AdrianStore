@@ -12,3 +12,6 @@ allowBuilds:
   '@scarf/scarf': false
   # nice-napi: mejora opcional de prioridad de proceso para piscina (worker pool de Angular build), no requerido.
   nice-napi: false
+  # workerd: postinstall descarga el binario del runtime, solo lo usa `wrangler dev` (preview local).
+  # CI y `wrangler deploy` no lo necesitan; poner true si algún día se corre `wrangler dev` en este repo.
+  workerd: false

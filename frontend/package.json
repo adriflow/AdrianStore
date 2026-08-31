@@ -9,7 +9,8 @@
     "ng": "ng",
     "start": "ng serve --open",
     "start:dev": "ng serve --open",
-    "build": "ng build"
+    "build": "ng build",
+    "deploy": "ng build --configuration production && wrangler deploy"
   },
   "dependencies": {
     "@angular/animations": "^16.2.0",
@@ -31,6 +32,7 @@
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
     "tailwindcss": "^3.4.19",
-    "typescript": "~5.1.6"
+    "typescript": "~5.1.6",
+    "wrangler": "^4.0.0"
   }
 }
