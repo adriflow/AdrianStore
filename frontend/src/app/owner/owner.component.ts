@@ -161,20 +161,22 @@ export class OwnerComponent implements OnInit, OnDestroy {
   }
 
   loadStoreData(storeId: string, storeName?: string): void {
-    this.productService.getStoresAdmin().subscribe({
-      next: (stores) => {
-        const found = stores.find((s) => s.id === storeId);
+    this.productService.getOwnStore(storeId).subscribe({
+      next: (found) => {
         if (found) {
           this.store = found;
           this.color = found.color || '';
           this.whatsappDefault = found.whatsapp_default || '';
+          if (found.slug) {
+            this.loadAbout(found.slug);
+          }
         }
       },
       error: () => {
         this.store = { id: storeId, name: storeName || 'Mi negocio', slug: '', color: '', whatsapp_default: '', is_closed: false, priority: null, created_at: '' };
       },
     });
-    this.productService.getStoreProducts(storeId).subscribe({
+    this.productService.getOwnStoreProducts(storeId).subscribe({
       next: (products) => {
         this.products = products.map((p) => ({ type: p.type || 'otros', ...p }));
       },
@@ -182,19 +184,19 @@ export class OwnerComponent implements OnInit, OnDestroy {
         this.products = [];
       },
     });
-    const slug = this.store?.slug;
-    if (slug) {
-      this.productService.getAboutStore(slug).subscribe({
-        next: (about) => {
-          this.editAboutContent = about.content;
-          this.aboutImageUrl = about.imageUrl || '';
-          this.aboutUpdatedAt = about.updatedAt || '';
-        },
-        error: () => {
-          this.editAboutContent = '';
-        },
-      });
-    }
+  }
+
+  loadAbout(slug: string): void {
+    this.productService.getAboutStore(slug).subscribe({
+      next: (about) => {
+        this.editAboutContent = about.content;
+        this.aboutImageUrl = about.imageUrl || '';
+        this.aboutUpdatedAt = about.updatedAt || '';
+      },
+      error: () => {
+        this.editAboutContent = '';
+      },
+    });
   }
 
   saveSettings(): void {

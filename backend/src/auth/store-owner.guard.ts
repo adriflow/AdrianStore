@@ -15,13 +15,11 @@ export class StoreOwnerGuard implements CanActivate {
     if (user.role === 'admin') {
       return true;
     }
-    // Dueño accede solo a su propio negocio
+    // Dueño autenticado con negocio asignado: la comprobación de que el
+    // recurso pertenece a su negocio la hace cada controlador (el nombre
+    // del parámetro de ruta varía: id de negocio, slug, id de producto...).
     if (user.role === 'owner' && user.storeId) {
-      const paramStoreId = request.params?.storeId;
-      if (!paramStoreId) {
-        return true;
-      }
-      return user.storeId === paramStoreId;
+      return true;
     }
     return false;
   }

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -136,16 +137,29 @@ export class StoreController {
     return { message: 'Negocio eliminado' };
   }
 
+  @Get(':id/me')
+  @UseGuards(JwtAuthGuard, StoreOwnerGuard)
+  @ApiOperation({ summary: 'El dueño consulta la info de su propio negocio (incluye si está cerrado)' })
+  async getOwn(@Param('id') id: string, @Req() req: any) {
+    const user = req.user;
+    if (user.role !== 'admin' && user.storeId !== id) {
+      throw new ForbiddenException('No puedes ver otro negocio');
+    }
+    const store = await this.storeService.findById(id);
+    if (!store) {
+      return null;
+    }
+    const { password_hash, username, ...publicInfo } = store as any;
+    return publicInfo;
+  }
+
   @Put(':id/me')
   @UseGuards(JwtAuthGuard, StoreOwnerGuard)
   @ApiOperation({ summary: 'El dueño edita su color y whatsapp default' })
   updateOwner(@Param('id') id: string, @Req() req: any, @Body() dto: UpdateStoreOwnerDto) {
     const user = req.user;
     if (user.role !== 'admin' && user.storeId !== id) {
-      return this.storeService.updateAdmin(id, {
-        color: dto.color,
-        whatsappDefault: dto.whatsappDefault,
-      });
+      throw new ForbiddenException('No puedes modificar otro negocio');
     }
     return this.storeService.updateAdmin(id, {
       color: dto.color,
@@ -160,7 +174,7 @@ export class StoreController {
     const user = req.user;
     if (user.role !== 'admin' && user.storeId !== id) {
       // owner no puede tocar credenciales de otro negocio
-      return { message: 'Forbidden' };
+      throw new ForbiddenException('No puedes modificar credenciales de otro negocio');
     }
     await this.storeService.changeCredentials(id, dto);
     return { message: 'Credenciales actualizadas' };

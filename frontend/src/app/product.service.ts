@@ -141,6 +141,11 @@ export class ProductService {
     return this.http.get<Store[]>(`${this.storesUrl}/admin`, { withCredentials: true });
   }
 
+  /** Info del propio negocio (dueño), incluye si está cerrado */
+  getOwnStore(id: string): Observable<Store | null> {
+    return this.http.get<Store | null>(`${this.storesUrl}/${id}/me`, { withCredentials: true });
+  }
+
   /** Crear un negocio (solo superadmin) */
   createStore(name: string, username: string, password: string): Observable<Store> {
     return this.http.post<Store>(this.storesUrl, { name, username, password }, { withCredentials: true });
@@ -174,6 +179,11 @@ export class ProductService {
   /** Productos de un negocio (públicos dentro de su sección) */
   getStoreProducts(storeId: string): Observable<Product[]> {
     return this.http.get<Product[]>(`${this.apiUrl}/store/${storeId}`);
+  }
+
+  /** Productos del propio negocio para su dueño (incluye si está cerrado) */
+  getOwnStoreProducts(storeId: string): Observable<Product[]> {
+    return this.http.get<Product[]>(`${this.apiUrl}/store/${storeId}/manage`, { withCredentials: true });
   }
 
   /** "Sobre mí" de un negocio por slug */

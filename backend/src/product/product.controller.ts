@@ -40,6 +40,18 @@ export class ProductController {
     return this.productService.findAll(type);
   }
 
+  @Get('store/:storeId/manage')
+  @UseGuards(JwtAuthGuard, StoreOwnerGuard)
+  @ApiOperation({ summary: 'Productos de un negocio para su propio dueño (incluye negocio cerrado)' })
+  @ApiResponse({ status: 200, description: 'Productos del negocio.', type: ProductResponseDto, isArray: true })
+  async getByStoreForOwner(@Req() req: any, @Param('storeId') storeId: string): Promise<ProductResponseDto[]> {
+    const user = req.user;
+    if (user.role !== 'admin' && user.storeId !== storeId) {
+      throw new ForbiddenException('No puedes ver productos de otro negocio');
+    }
+    return this.productService.findByStore(storeId);
+  }
+
   @Get('store/:storeId')
   @ApiOperation({ summary: 'Productos de un negocio (visibles en su sección)' })
   @ApiResponse({ status: 200, description: 'Productos del negocio.', type: ProductResponseDto, isArray: true })

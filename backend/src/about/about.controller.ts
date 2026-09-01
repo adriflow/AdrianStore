@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsString, MaxLength } from 'class-validator';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -104,7 +104,7 @@ export class AboutController {
     }
     // el dueño solo puede editar el about de su negocio
     if (user.role === 'owner' && user.storeId !== store.id) {
-      return { content: '', updatedAt: '' };
+      throw new ForbiddenException('No puedes editar el "Sobre mí" de otro negocio');
     }
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
     const imageUrl = image ? (await saveImages([image], backendUrl))[0] : undefined;

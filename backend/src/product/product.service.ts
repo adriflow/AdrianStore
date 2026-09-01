@@ -62,12 +62,15 @@ export class ProductService {
     return [];
   }
 
-  private async transform(product: Product): Promise<ProductResponseDto> {
+  private async transform(
+    product: Product,
+    storeMap?: Map<string, { name: string; is_closed: boolean }>,
+  ): Promise<ProductResponseDto> {
     const imageUrls = this.parseImageUrls((product as any).imageUrls);
     const storeId = (product as any).storeId || null;
     let storeName: string | undefined;
     if (storeId) {
-      const store = await this.storeService.findById(storeId);
+      const store = storeMap ? storeMap.get(storeId) : await this.storeService.findById(storeId);
       if (store && !store.is_closed) {
         storeName = store.name;
       }
@@ -103,6 +106,7 @@ export class ProductService {
       province: createProductDto.province || ProvinceType.CAMAGUEY,
       imageUrl: createProductDto.imageUrl || '',
       imageUrls: JSON.stringify(createProductDto.imageUrls || (createProductDto.imageUrl ? [createProductDto.imageUrl] : [])),
+      type: createProductDto.type || ProductType.OTROS,
       storeId,
       isPublic: createProductDto.isPublic ?? true,
     };
@@ -113,16 +117,19 @@ export class ProductService {
   // Catálogo público: productos públicos de superadmin y de negocios abiertos, con orden por prioridad.
   async findAll(type?: string): Promise<ProductResponseDto[]> {
     const rows = await db.select().from(products);
-    const filtered = rows.filter((p) => (p as any).isPublic !== false);
-
-    // Mapear prioridad y fecha por tienda para ordenar
-    const storeMap = new Map<string, { priority: number | null; created_at: string; is_closed: boolean }>();
-    const allStores = await this.storeService.findAllAdmin();
-    for (const s of allStores) {
-      storeMap.set(s.id, { priority: s.priority, created_at: s.created_at, is_closed: s.is_closed });
+    let filtered = rows.filter((p) => (p as any).isPublic !== false);
+    if (type) {
+      filtered = filtered.filter((p) => (p as any).type === type);
     }
 
-    const transformed = await Promise.all(filtered.map((p) => this.transform(p)));
+    // Mapear prioridad y fecha por tienda para ordenar
+    const storeMap = new Map<string, { name: string; priority: number | null; created_at: string; is_closed: boolean }>();
+    const allStores = await this.storeService.findAllAdmin();
+    for (const s of allStores) {
+      storeMap.set(s.id, { name: s.name, priority: s.priority, created_at: s.created_at, is_closed: s.is_closed });
+    }
+
+    const transformed = await Promise.all(filtered.map((p) => this.transform(p, storeMap)));
 
     return transformed
       .filter((p) => {
