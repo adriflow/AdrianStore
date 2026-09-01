@@ -7,7 +7,7 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
 
     if (!user || user.role !== 'admin') {
-      throw new ForbiddenException('Acceso denegado: se requiere rol admin');
+      throw new ForbiddenException('Acceso denegado: se requiere rol superadmin');
     }
 
     return true;

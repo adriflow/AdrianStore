@@ -12,6 +12,7 @@ import { ProductType } from './product-type.enum';
 import { ProvinceType } from './province.enum';
 import { sanitizeText, sanitizePhone } from '../security/sanitize';
 import { deleteImages } from '../security/uploads';
+import { StoreService } from '../store/store.service';
 
 function generateUuidV7(): string {
   const timestampMs = BigInt(Date.now());
@@ -44,6 +45,8 @@ function generateUuidV7(): string {
 
 @Injectable()
 export class ProductService {
+  constructor(private readonly storeService: StoreService) {}
+
   private parseImageUrls(value: string[] | string | null | undefined): string[] {
     if (Array.isArray(value)) {
       return value;
@@ -59,8 +62,19 @@ export class ProductService {
     return [];
   }
 
-  private transform(product: Product): ProductResponseDto {
+  private async transform(
+    product: Product,
+    storeMap?: Map<string, { name: string; is_closed: boolean }>,
+  ): Promise<ProductResponseDto> {
     const imageUrls = this.parseImageUrls((product as any).imageUrls);
+    const storeId = (product as any).storeId || null;
+    let storeName: string | undefined;
+    if (storeId) {
+      const store = storeMap ? storeMap.get(storeId) : await this.storeService.findById(storeId);
+      if (store && !store.is_closed) {
+        storeName = store.name;
+      }
+    }
     return {
       id: product.id,
       name: product.name,
@@ -73,40 +87,88 @@ export class ProductService {
       whatsapp: product.whatsapp || '',
       type: (product.type || 'otros') as ProductType,
       province: ((product as any).province || ProvinceType.CAMAGUEY) as ProvinceType,
+      storeId,
+      storeName,
+      isPublic: (product as any).isPublic ?? true,
     };
   }
 
-  async create(createProductDto: CreateProductDto & { imageUrl: string; imageUrls: string[] }): Promise<ProductResponseDto> {
+  async create(createProductDto: CreateProductDto & { imageUrl: string; imageUrls: string[]; storeId?: string }): Promise<ProductResponseDto> {
+    const storeId = createProductDto.storeId || null;
     const newProduct = {
       id: generateUuidV7(),
-      ...createProductDto,
       name: sanitizeText(createProductDto.name, 120),
-      description: sanitizeText(createProductDto.description, 2000),
-      whatsapp: sanitizePhone(createProductDto.whatsapp),
+      description: sanitizeText(createProductDto.description || '', 2000),
+      whatsapp: sanitizePhone(createProductDto.whatsapp || ''),
       price: createProductDto.price.toString(),
       currency: createProductDto.currency || CurrencyType.CUP,
       acceptsTransfer: createProductDto.acceptsTransfer ?? true,
       province: createProductDto.province || ProvinceType.CAMAGUEY,
+      imageUrl: createProductDto.imageUrl || '',
       imageUrls: JSON.stringify(createProductDto.imageUrls || (createProductDto.imageUrl ? [createProductDto.imageUrl] : [])),
+      type: createProductDto.type || ProductType.OTROS,
+      storeId,
+      isPublic: createProductDto.isPublic ?? true,
     };
-
-    const [product] = await db.insert(products).values(newProduct).returning();
+    const [product] = await db.insert(products).values(newProduct as any).returning();
     return this.transform(product);
   }
 
+  // Catálogo público: productos públicos de superadmin y de negocios abiertos, con orden por prioridad.
   async findAll(type?: string): Promise<ProductResponseDto[]> {
-    const query = db.select().from(products);
-    if (type && type !== 'all') {
-      query.where(eq(products.type, type));
+    const rows = await db.select().from(products);
+    let filtered = rows.filter((p) => (p as any).isPublic !== false);
+    if (type) {
+      filtered = filtered.filter((p) => (p as any).type === type);
     }
 
-    const productRows = await query.orderBy(desc(products.id));
-    return productRows.map((product) => this.transform(product));
+    // Mapear prioridad y fecha por tienda para ordenar
+    const storeMap = new Map<string, { name: string; priority: number | null; created_at: string; is_closed: boolean }>();
+    const allStores = await this.storeService.findAllAdmin();
+    for (const s of allStores) {
+      storeMap.set(s.id, { name: s.name, priority: s.priority, created_at: s.created_at, is_closed: s.is_closed });
+    }
+
+    const transformed = await Promise.all(filtered.map((p) => this.transform(p, storeMap)));
+
+    return transformed
+      .filter((p) => {
+        if (!p.storeId) return true;
+        const info = storeMap.get(p.storeId);
+        return info && !info.is_closed;
+      })
+      .sort((a, b) => {
+        const aStore = a.storeId ? storeMap.get(a.storeId) : null;
+        const bStore = b.storeId ? storeMap.get(b.storeId) : null;
+        // prioridad null (negocio sin prioridad) => al final. superadmin (sin store) => 5.
+        const aRank: number = aStore ? (aStore.priority == null ? 999 : aStore.priority) : 5;
+        const bRank: number = bStore ? (bStore.priority == null ? 999 : bStore.priority) : 5;
+        if (aRank !== bRank) return aRank - bRank;
+        // mismo rango: por más reciente creado
+        return b.id.localeCompare(a.id);
+      });
+  }
+
+  // Productos de un negocio (usado en su sección/entorno): incluye todos sus productos (públicos y no).
+  async findByStore(storeId: string): Promise<ProductResponseDto[]> {
+    const rows = await db.select().from(products).where(eq(products.storeId, storeId));
+    const transformed = await Promise.all(rows.map((p) => this.transform(p)));
+    return transformed.sort((a, b) => b.id.localeCompare(a.id));
+  }
+
+  // Productos de un negocio visibles para invitado dentro de la sección Negocios
+  // (productos públicos y no públicos, mientras el negocio esté abierto).
+  async findByStorePublic(storeId: string): Promise<ProductResponseDto[]> {
+    const store = await this.storeService.findById(storeId);
+    if (!store || store.is_closed) {
+      return [];
+    }
+    return this.findByStore(storeId);
   }
 
   async update(
     id: string,
-    updateProductDto: UpdateProductDto & { imageUrl?: string; imageUrls?: string[] },
+    updateProductDto: UpdateProductDto & { imageUrl?: string; imageUrls?: string[]; storeId?: string; isPublic?: boolean },
   ): Promise<ProductResponseDto> {
     const existingProducts = await db.select().from(products).where(eq(products.id, id)).limit(1);
     if (existingProducts.length === 0) {
@@ -139,6 +201,9 @@ export class ProductService {
     }
     if (updateProductDto.province !== undefined) {
       updateData.province = updateProductDto.province;
+    }
+    if (updateProductDto.isPublic !== undefined) {
+      (updateData as any).isPublic = updateProductDto.isPublic;
     }
 
     const nextImageUrl = updateProductDto.imageUrl ?? existingProduct.imageUrl;
@@ -173,7 +238,6 @@ export class ProductService {
     return this.transform(productRows[0]);
   }
 
-
   async delete(id: string): Promise<void> {
     const rows = await db.select().from(products).where(eq(products.id, id)).limit(1);
     if (rows.length === 0) {
@@ -182,5 +246,4 @@ export class ProductService {
     await db.delete(products).where(eq(products.id, id));
     await deleteImages(this.parseImageUrls((rows[0] as any).imageUrls));
   }
-
 }

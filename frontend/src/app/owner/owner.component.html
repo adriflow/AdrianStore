@@ -1,0 +1,282 @@
+<div class="flex min-h-screen flex-col bg-cream text-neutral-800">
+  <header class="sticky top-0 z-50 border-b border-neutral-900/5 bg-white/80 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" (click)="goHome()" class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="Logo AdrianStore" class="h-9 w-9 rounded-xl object-contain" />
+        <span class="text-left">
+          <span class="block font-display text-base font-bold leading-tight text-neutral-900">AdrianStore</span>
+          <span class="block text-[11px] leading-tight text-neutral-400">Catálogo en línea</span>
+        </span>
+      </button>
+      <div class="flex items-center gap-3">
+        <button *ngIf="session && store?.slug" type="button" (click)="goStore()" class="rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-semibold text-neutral-600 transition hover:border-leaf-300 hover:text-leaf-700">Ver mi negocio</button>
+        <button *ngIf="session" type="button" (click)="logoutOwner()" class="rounded-full border border-red-200 px-4 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-50">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-14 sm:px-6 lg:px-8">
+    <!-- LOGIN DUEÑO -->
+    <div *ngIf="!session" class="mx-auto max-w-md">
+      <div class="reveal reveal-in rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-10">
+        <span class="text-xs font-semibold uppercase tracking-widest text-leaf-600">Acceso a mi negocio</span>
+        <h2 class="mt-2 font-display text-2xl font-bold text-neutral-900">Panel de dueño</h2>
+        <p class="mt-2 text-sm text-neutral-500">Ingresa las credenciales de tu negocio para gestionar tus productos, colores y contacto.</p>
+        <div class="mt-6 space-y-4">
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">Usuario del negocio</span>
+            <input type="text" [(ngModel)]="loginUsername" placeholder="usuario" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">Contraseña</span>
+            <input type="password" [(ngModel)]="loginPassword" placeholder="********" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+          </label>
+        </div>
+        <div *ngIf="loginError" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{{ loginError }}</div>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button type="button" (click)="loginAsOwner()" class="rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Ingresar</button>
+          <button type="button" (click)="goHome()" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition hover:border-leaf-300 hover:text-leaf-700">Volver</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL DUEÑO -->
+    <div *ngIf="session && store">
+      <div class="reveal reveal-in rounded-3xl border p-6" [style.border-color]="accent + '55'" [style.background-color]="accent + '14'">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-4">
+            <span class="flex h-14 w-14 items-center justify-center rounded-2xl font-display text-xl font-bold text-white" [style.background-color]="accent">{{ store.name.charAt(0).toUpperCase() }}</span>
+            <div>
+              <p class="font-display text-xl font-bold text-neutral-900">{{ store.name }}</p>
+              <p class="text-sm text-neutral-500">Sesión de dueño activa. Gestiona tu página desde este panel.</p>
+            </div>
+          </div>
+          <button *ngIf="store.slug" type="button" (click)="goStore()" class="rounded-full border border-neutral-200 bg-white px-5 py-2 text-sm font-semibold text-neutral-700 transition hover:border-leaf-300 hover:text-leaf-700">Ver página pública</button>
+        </div>
+      </div>
+
+      <!-- Configuración del negocio -->
+      <section class="reveal reveal-in mt-8 rounded-[2rem] border border-neutral-900/5 bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="font-display text-2xl font-bold text-neutral-900">Mi negocio</h2>
+        <p class="mt-1 text-sm text-neutral-500">Personaliza el color y el WhatsApp por defecto de tu página.</p>
+        <div class="mt-6 grid gap-5 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">Color de acento (hex)</span>
+            <div class="mt-1.5 flex items-center gap-3">
+              <input type="color" [(ngModel)]="color" class="h-11 w-11 shrink-0 cursor-pointer rounded-xl border border-neutral-200 bg-white p-1" />
+              <input type="text" [(ngModel)]="color" placeholder="#467722" class="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 font-mono outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">WhatsApp por defecto</span>
+            <input type="text" [(ngModel)]="whatsappDefault" placeholder="535XXXXXXX" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+            <span class="mt-1 block text-xs text-neutral-400">Escribe el número sin el +, con código de país.</span>
+          </label>
+        </div>
+        <div *ngIf="saveError" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{{ saveError }}</div>
+        <button type="button" (click)="saveSettings()" class="mt-5 rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Guardar configuración</button>
+      </section>
+
+      <!-- Cambiar credenciales -->
+      <section class="reveal reveal-in mt-8 rounded-[2rem] border border-neutral-900/5 bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="font-display text-2xl font-bold text-neutral-900">Cambiar usuario o contraseña</h2>
+        <p class="mt-1 text-sm text-neutral-500">Si cambias tus credenciales, úsarlas la próxima vez que inicies sesión.</p>
+        <div class="mt-6 grid gap-5 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">Nuevo usuario</span>
+            <input type="text" [(ngModel)]="newUsername" [placeholder]="session.username || 'usuario'" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-700">Nueva contraseña</span>
+            <input type="password" [(ngModel)]="newPassword" placeholder="Mínimo 8 caracteres" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+          </label>
+        </div>
+        <div *ngIf="credError" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{{ credError }}</div>
+        <div *ngIf="credOk" class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{{ credOk }}</div>
+        <button type="button" (click)="changeCredentials()" class="mt-5 rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Actualizar credenciales</button>
+      </section>
+
+      <!-- Agregar / editar producto -->
+      <section class="reveal reveal-in mt-8 rounded-[2rem] border border-neutral-900/5 bg-white p-6 shadow-soft sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <h2 class="font-display text-2xl font-bold text-neutral-900">{{ editProductId ? 'Editar producto' : 'Agregar producto' }}</h2>
+          <button *ngIf="editProductId" type="button" (click)="cancelEdit()" class="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">Cancelar edición</button>
+        </div>
+
+        <form #productForm="ngForm" (ngSubmit)="editProductId ? saveProduct(productForm) : submitProduct(productForm)" class="mt-6">
+          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Nombre *</span>
+              <input name="name" [(ngModel)]="model.name" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Precio *</span>
+              <input name="price" type="number" min="0" step="0.01" [(ngModel)]="model.price" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Moneda</span>
+              <select name="currency" [(ngModel)]="model.currency" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200">
+                <option *ngFor="let item of currencyOptions" [value]="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Tipo</span>
+              <select name="type" [(ngModel)]="model.type" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200">
+                <option *ngFor="let item of productTypes" [value]="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Provincia *</span>
+              <select name="province" [(ngModel)]="model.province" required class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200">
+                <option *ngFor="let item of provinceOptions" [value]="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">WhatsApp (opcional; si no, se usa el del negocio)</span>
+              <input name="whatsapp" [(ngModel)]="model.whatsapp" placeholder="535XXXXXXX" class="mt-1.5 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200" />
+            </label>
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-medium text-neutral-700">Descripción</span>
+              <textarea name="description" [(ngModel)]="model.description" rows="3" class="mt-1.5 w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"></textarea>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-neutral-700">Imágenes (opcional, hasta 10)</span>
+              <input type="file" accept="image/png, image/jpeg, image/webp" multiple (change)="updateImagePreviews($event)" class="mt-1.5 block w-full text-sm text-neutral-500 file:mr-4 file:rounded-full file:border-0 file:bg-leaf-100 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-leaf-700 hover:file:bg-leaf-200" />
+            </label>
+            <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+              <input type="checkbox" name="acceptsTransfer" [(ngModel)]="model.acceptsTransfer" class="h-5 w-5 rounded border-neutral-300 text-leaf-600 focus:ring-leaf-400" />
+              <span class="text-sm font-medium text-neutral-700">Acepta transferencia como pago</span>
+            </label>
+            <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+              <input type="checkbox" name="isPublic" [(ngModel)]="model.isPublic" class="h-5 w-5 rounded border-neutral-300 text-leaf-600 focus:ring-leaf-400" />
+              <span class="text-sm font-medium text-neutral-700">Público (sale en el catálogo general)</span>
+            </label>
+          </div>
+
+          <div *ngIf="imagePreviews.length" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div *ngFor="let preview of imagePreviews" class="overflow-hidden rounded-2xl border border-neutral-200">
+              <img [src]="preview" alt="Vista previa" class="h-36 w-full bg-neutral-50 object-contain" />
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button type="submit" [disabled]="productForm.invalid" class="rounded-full bg-leaf-600 px-7 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700 disabled:cursor-not-allowed disabled:opacity-50">
+              {{ editProductId ? 'Guardar cambios' : 'Guardar producto' }}
+            </button>
+            <button *ngIf="editProductId" type="button" (click)="cancelEdit()" class="rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-300">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Productos del negocio -->
+      <div class="mt-12 flex flex-wrap items-end justify-between gap-4">
+        <h2 class="font-display text-2xl font-bold text-neutral-900">Mis productos</h2>
+        <span class="rounded-full border border-neutral-900/5 bg-white px-4 py-1.5 text-sm text-neutral-500">{{ products.length }} productos</span>
+      </div>
+
+      <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <article
+          *ngFor="let product of products"
+          class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-900/5 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+        >
+          <button
+            type="button"
+            (click)="openLightbox(product)"
+            class="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-neutral-100 text-left"
+          >
+            <div class="relative h-full w-full">
+              <div *ngIf="productImages(product).length" class="flex h-full w-full transition-transform duration-500 ease-in-out" [style.transform]="'translateX(-' + (photoIndex(product) * 100) + '%)'">
+                <img *ngFor="let img of productImages(product)" [src]="img" [alt]="product.name" class="h-full w-full shrink-0 object-contain p-3" />
+              </div>
+              <div *ngIf="!productImages(product).length" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-100 to-leaf-50 text-leaf-600">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+              </div>
+            </div>
+            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
+            <span
+              *ngIf="product.isPublic === false"
+              class="absolute right-3 top-3 rounded-full bg-amber-500/90 px-3 py-1 text-xs font-semibold text-white backdrop-blur"
+            >Privado</span>
+          </button>
+          <div class="flex flex-1 flex-col gap-3 p-5">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="font-display text-lg font-semibold text-neutral-900">{{ product.name }}</h3>
+              <span class="whitespace-nowrap font-display text-lg font-bold" [style.color]="accent">{{ formatPrice(product) }}</span>
+            </div>
+            <p class="flex-1 text-sm leading-relaxed text-neutral-500 line-clamp-2">{{ product.description }}</p>
+            <div class="pt-1 flex flex-wrap gap-2">
+              <button type="button" (click)="startEdit(product)" class="rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-leaf-300 hover:text-leaf-700">Editar</button>
+              <button type="button" (click)="deleteProduct(product)" class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50">Eliminar</button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div *ngIf="products.length === 0" class="py-16 text-center">
+        <p class="font-display text-xl text-neutral-600">No tienes productos todavía.</p>
+        <p class="mt-2 text-sm text-neutral-400">Agrega el primero con el formulario de arriba.</p>
+      </div>
+
+      <!-- Sobre mí del negocio -->
+      <section class="reveal reveal-in mt-12 rounded-[2rem] border border-neutral-900/5 bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="font-display text-2xl font-bold text-neutral-900">"Sobre mí" de mi negocio</h2>
+        <p class="mt-1 text-sm text-neutral-500">Este contenido lo ven los visitantes en la pestaña "Sobre mí" de tu página.</p>
+        <div class="mt-6 flex items-center gap-5">
+          <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50">
+            <img *ngIf="aboutImageFile || aboutImageUrl" [src]="aboutImagePreview || aboutImageUrl" alt="Foto de perfil" class="h-full w-full object-cover" />
+            <span *ngIf="!aboutImageUrl && !aboutImageFile" class="text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+          </div>
+          <div class="flex-1">
+            <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-leaf-600 px-4 py-2 text-sm font-semibold text-leaf-700 transition hover:bg-leaf-50">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              Subir foto
+              <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onAboutImageSelected($event)" class="hidden" />
+            </label>
+            <p class="mt-2 text-xs text-neutral-400">PNG, JPG o WebP · máx. 5 MB</p>
+          </div>
+        </div>
+        <textarea
+          class="mt-6 w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 leading-relaxed outline-none transition focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"
+          [(ngModel)]="editAboutContent"
+          rows="8"
+          placeholder="Escribe la carta de presentación de tu negocio..."
+        ></textarea>
+        <button type="button" (click)="saveAbout()" class="mt-4 rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Guardar "Sobre mí"</button>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <div *ngIf="lightboxProduct" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-4" (click)="closeLightbox()">
+    <div class="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-neutral-900 shadow-lift md:max-h-[88vh] md:flex-row" (click)="$event.stopPropagation()">
+      <button type="button" (click)="closeLightbox()" aria-label="Cerrar vista previa" class="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 transition hover:bg-black/80">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <div class="relative flex h-[38vh] shrink-0 items-center justify-center bg-neutral-950 md:h-auto md:w-[55%]">
+        <img [src]="productImages(lightboxProduct)[lightboxIndex]" [alt]="lightboxProduct.name" class="max-h-full max-w-full object-contain" />
+        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="prevLightboxImage()" aria-label="Imagen anterior" class="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button *ngIf="productImages(lightboxProduct).length > 1" type="button" (click)="nextLightboxImage()" aria-label="Imagen siguiente" class="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="flex min-h-0 flex-1 flex-col gap-4 p-6">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-300">{{ lightboxProduct.type | titlecase }}<span *ngIf="lightboxProduct.province"> · {{ lightboxProduct.province }}</span></span>
+          <h3 class="mt-1.5 font-display text-2xl font-bold leading-tight text-white">{{ lightboxProduct.name }}</h3>
+          <p class="mt-1.5 font-display text-lg font-semibold text-leaf-300">{{ formatPrice(lightboxProduct) }}</p>
+        </div>
+        <div class="flex min-h-24 flex-1 flex-col">
+          <p class="text-xs font-semibold uppercase tracking-widest text-neutral-500">Descripción</p>
+          <div class="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
+            <p class="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">{{ lightboxProduct.description || 'Este producto no tiene descripción.' }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="startEdit(lightboxProduct)" class="rounded-full border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-leaf-400 hover:text-leaf-300">Editar producto</button>
+      </div>
+    </div>
+  </div>
+</div>

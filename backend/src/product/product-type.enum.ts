@@ -5,5 +5,9 @@ export enum ProductType {
   HOGAR = 'hogar',
   ELECTRODOMESTICOS = 'electrodomesticos',
   DEPORTES = 'deportes',
+  SERVICIOS = 'servicios',
+  PRENDAS = 'prendas',
+  ACCESORIOS = 'accesorios',
+  INMUEBLES = 'inmuebles',
   OTROS = 'otros',
 }

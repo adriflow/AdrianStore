@@ -41,7 +41,9 @@ async function initializeDatabase() {
         currency TEXT NOT NULL DEFAULT 'CUP',
         accepts_transfer INTEGER NOT NULL DEFAULT 1,
         image_urls TEXT NOT NULL DEFAULT '[]',
-        province TEXT NOT NULL DEFAULT 'Camagüey'
+        province TEXT NOT NULL DEFAULT 'Camagüey',
+        store_id TEXT,
+        is_public INTEGER NOT NULL DEFAULT 1
       );
     `);
     await db.run(`
@@ -53,11 +55,37 @@ async function initializeDatabase() {
       );
     `);
     await db.run(`
+      CREATE TABLE IF NOT EXISTS stores (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        color TEXT NOT NULL DEFAULT '',
+        whatsapp_default TEXT NOT NULL DEFAULT '',
+        is_closed INTEGER NOT NULL DEFAULT 0,
+        priority INTEGER,
+        created_at TEXT NOT NULL DEFAULT ''
+      );
+    `);
+    await db.run(`
       CREATE TABLE IF NOT EXISTS about (
         id TEXT PRIMARY KEY,
         content TEXT NOT NULL DEFAULT '',
         updated_at TEXT NOT NULL DEFAULT '',
-        image_url TEXT NOT NULL DEFAULT ''
+        image_url TEXT NOT NULL DEFAULT '',
+        store_id TEXT
+      );
+    `);
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL DEFAULT '',
+        message TEXT NOT NULL,
+        approved INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT ''
       );
     `);
 
@@ -113,6 +141,12 @@ async function initializeDatabase() {
     ALTER TABLE products ADD COLUMN IF NOT EXISTS province VARCHAR(50) NOT NULL DEFAULT 'Camagüey';
   `);
   await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS store_id VARCHAR;
+  `);
+  await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE;
+  `);
+  await pool.query(`
     UPDATE products SET province = 'Camagüey' WHERE province IS NULL OR province = '';
   `);
   await pool.query(`
@@ -128,6 +162,20 @@ async function initializeDatabase() {
     );
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS stores (
+      id VARCHAR PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(100) UNIQUE NOT NULL,
+      username VARCHAR(255) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      color VARCHAR(20) NOT NULL DEFAULT '',
+      whatsapp_default VARCHAR(20) NOT NULL DEFAULT '',
+      is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+      priority INTEGER,
+      created_at VARCHAR(50) NOT NULL DEFAULT ''
+    );
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS about (
       id VARCHAR PRIMARY KEY,
       content TEXT NOT NULL DEFAULT '',
@@ -137,6 +185,20 @@ async function initializeDatabase() {
   `);
   await pool.query(`
     ALTER TABLE about ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT '';
+  `);
+  await pool.query(`
+    ALTER TABLE about ADD COLUMN IF NOT EXISTS store_id VARCHAR;
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id VARCHAR PRIMARY KEY,
+      kind VARCHAR(20) NOT NULL,
+      name VARCHAR(120) NOT NULL,
+      phone VARCHAR(30) NOT NULL DEFAULT '',
+      message TEXT NOT NULL,
+      approved BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at VARCHAR(50) NOT NULL DEFAULT ''
+    );
   `);
 
   db = drizzlePg(pool);

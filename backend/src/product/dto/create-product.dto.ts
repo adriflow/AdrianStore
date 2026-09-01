@@ -53,4 +53,10 @@ export class CreateProductDto {
   @IsEnum(ProvinceType)
   @IsOptional()
   province?: ProvinceType;
+
+  @ApiPropertyOptional({ example: true, description: 'Si es público sale en el catálogo; si no, solo en su negocio (por defecto true)' })
+  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
 }

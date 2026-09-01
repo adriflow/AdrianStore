@@ -16,10 +16,12 @@ export const about = useSqlite
       content: sqliteText('content').notNull().default(''),
       updatedAt: sqliteText('updated_at').notNull().default(''),
       imageUrl: sqliteText('image_url').notNull().default(''),
+      storeId: sqliteText('store_id'),
     })
   : pgTable('about', {
       id: pgVarchar('id').primaryKey(),
       content: pgText('content').notNull().default(''),
       updatedAt: pgVarchar('updated_at', { length: 50 }).notNull().default(''),
       imageUrl: pgText('image_url').notNull().default(''),
+      storeId: pgVarchar('store_id'),
     });

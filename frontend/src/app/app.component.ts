@@ -1,7 +1,9 @@
 import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Product, ProductService } from './product.service';
+import { Router } from '@angular/router';
+import { Product, ProductService, Store, Feedback, FeedbackPublic } from './product.service';
+import { firstValueFrom } from 'rxjs';
 
 interface CatalogOption {
   value: string;
@@ -11,7 +13,7 @@ interface CatalogOption {
 type ViewName = 'inicio' | 'catalogo' | 'admin' | 'sobre-mi';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-home',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -32,6 +34,10 @@ export class AppComponent implements OnInit, OnDestroy {
     { value: 'hogar', label: 'Hogar' },
     { value: 'electrodomesticos', label: 'Electrodomésticos' },
     { value: 'deportes', label: 'Deportes' },
+    { value: 'servicios', label: 'Servicios' },
+    { value: 'prendas', label: 'Prendas' },
+    { value: 'accesorios', label: 'Accesorios' },
+    { value: 'inmuebles', label: 'Inmuebles' },
     { value: 'otros', label: 'Otros' },
   ];
   selectedCategory = 'all';
@@ -43,7 +49,7 @@ export class AppComponent implements OnInit, OnDestroy {
   priceBounds = { min: 0, max: 0 };
   minPrice = 0;
   maxPrice = 0;
-  selectedPriceCurrency = 'USD';
+  selectedPriceCurrency = 'all';
   selectedProvince = 'all';
 
   adminUsername = '';
@@ -61,6 +67,10 @@ export class AppComponent implements OnInit, OnDestroy {
     { value: 'hogar', label: 'Hogar' },
     { value: 'electrodomesticos', label: 'Electrodomésticos' },
     { value: 'deportes', label: 'Deportes' },
+    { value: 'servicios', label: 'Servicios' },
+    { value: 'prendas', label: 'Prendas' },
+    { value: 'accesorios', label: 'Accesorios' },
+    { value: 'inmuebles', label: 'Inmuebles' },
     { value: 'otros', label: 'Otros' },
   ];
 
@@ -145,6 +155,26 @@ export class AppComponent implements OnInit, OnDestroy {
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>',
     },
     {
+      value: 'servicios',
+      label: 'Servicios',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>',
+    },
+    {
+      value: 'prendas',
+      label: 'Prendas',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/><path d="M9 21V10"/><path d="M15 21V10"/></svg>',
+    },
+    {
+      value: 'accesorios',
+      label: 'Accesorios',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="m4.93 4.93 2.12 2.12"/><path d="m16.95 16.95 2.12 2.12"/><path d="m19.07 4.93-2.12 2.12"/><path d="m7.05 16.95-2.12 2.12"/></svg>',
+    },
+    {
+      value: 'inmuebles',
+      label: 'Inmuebles',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="m5 21 1-7 6-12 6 12 1 7"/><path d="M9 21v-6h6v6"/><path d="M9 9h6"/></svg>',
+    },
+    {
       value: 'otros',
       label: 'Otros',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
@@ -158,12 +188,19 @@ export class AppComponent implements OnInit, OnDestroy {
   aboutImageFile?: File;
   aboutImagePreview = '';
 
-  constructor(private productService: ProductService, private sanitizer: DomSanitizer) {}
+  constructor(
+    private productService: ProductService,
+    private sanitizer: DomSanitizer,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.restoreLock();
     this.loadProducts();
     this.loadAbout();
+    this.loadPublicStores();
+    this.loadApprovedSuggestions();
+    this.startSuggestionRotation();
     this.initRevealObserver();
     this.startPhotoRotation();
     this.productService.getMe().subscribe({
@@ -171,6 +208,8 @@ export class AppComponent implements OnInit, OnDestroy {
         if (res?.user?.role === 'admin') {
           this.isAdmin = true;
           this.activeView = 'admin';
+          this.loadStores();
+          this.loadFeedbackAdmin();
         }
         this.scheduleReveals();
       },
@@ -186,6 +225,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     if (this.photoTimer) {
       this.stopPhotoRotation();
+    }
+    if (this.suggestionTimer) {
+      this.stopSuggestionRotation();
     }
     if (this.observer) {
       this.observer.disconnect();
@@ -326,6 +368,26 @@ export class AppComponent implements OnInit, OnDestroy {
     this.scheduleReveals();
   }
 
+  goNegocios(): void {
+    this.closeMenu();
+    this.router.navigate(['/negocios']);
+  }
+
+  goTuNegocio(): void {
+    this.closeMenu();
+    this.router.navigate(['/tu-negocio']);
+  }
+
+  goStoreBySlug(store: Store): void {
+    if (store.slug) {
+      this.router.navigate(['/negocio', store.slug]);
+    }
+  }
+
+  storeAccent(store: Store): string {
+    return store?.color || '#467722';
+  }
+
   restoreLock(): void {
     const raw = localStorage.getItem('adminLockUntil');
     if (!raw) {
@@ -393,6 +455,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.adminPassword = '';
         this.adminLoginError = '';
         this.activeView = 'admin';
+        this.loadStores();
         this.scheduleReveals();
       },
       error: () => {
@@ -416,7 +479,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.adminLoginError = '';
         this.selectedCategory = 'all';
         this.selectedCategoryLabel = 'Todos';
-        this.selectedPriceCurrency = 'USD';
+        this.selectedPriceCurrency = 'all';
         this.updatePriceBounds();
         this.activeView = 'inicio';
         this.scheduleReveals();
@@ -605,6 +668,10 @@ export class AppComponent implements OnInit, OnDestroy {
       hogar: 'assets/categorias/hogar.png',
       electrodomesticos: 'assets/categorias/electrodomesticos.png',
       deportes: 'assets/categorias/deportes.png',
+      servicios: 'assets/categorias/servicios.png',
+      prendas: 'assets/categorias/prendas.png',
+      accesorios: 'assets/categorias/accesorios.png',
+      inmuebles: 'assets/categorias/inmuebles.png',
       otros: 'assets/categorias/otros.png',
     };
     return images[this.selectedCategory] ?? '';
@@ -915,6 +982,378 @@ export class AppComponent implements OnInit, OnDestroy {
       },
       error: () => {
         // Ignore
+      },
+    });
+  }
+
+  // ===== Gestión de Negocios (superadmin) =====
+  stores: Store[] = [];
+  storesLoading = false;
+  storesError = '';
+  publicStores: Store[] = [];
+
+  newStoreName = '';
+  newStoreUsername = '';
+  newStorePassword = '';
+  createStoreError = '';
+  createStoreOk = '';
+
+  storeEditId: string | null = null;
+  storeEditColor = '';
+  storeEditWhatsapp = '';
+  storeEditPriority: string | null = null;
+  storeEditError = '';
+
+  showStoreProductsId: string | null = null;
+  storeProductsCache: Record<string, Product[]> = {};
+
+  showStoreDetailsId: string | null = null;
+
+  openStoreDetails(store: Store): void {
+    this.showStoreDetailsId = store.id;
+  }
+
+  closeStoreDetails(): void {
+    this.showStoreDetailsId = null;
+  }
+
+  get storeDetailsStore(): Store | null {
+    return this.stores.find((s) => s.id === this.showStoreDetailsId) || null;
+  }
+
+  loadStores(): void {
+    this.storesLoading = true;
+    this.storesError = '';
+    this.productService.getStoresAdmin().subscribe({
+      next: (stores) => {
+        this.stores = stores;
+        this.storesLoading = false;
+      },
+      error: () => {
+        this.storesLoading = false;
+        this.storesError = 'No se pudieron cargar los negocios.';
+      },
+    });
+  }
+
+  loadPublicStores(): void {
+    this.productService.getStores().subscribe({
+      next: (stores) => {
+        this.publicStores = stores;
+      },
+      error: () => {
+        this.publicStores = [];
+      },
+    });
+  }
+
+  get latestStore(): Store | null {
+    if (this.publicStores.length === 0) {
+      return null;
+    }
+    return this.publicStores[this.publicStores.length - 1];
+  }
+
+  get otherPublicStores(): Store[] {
+    if (this.publicStores.length <= 1) {
+      return [];
+    }
+    return this.publicStores.slice(0, -1);
+  }
+
+  createStore(): void {
+    this.createStoreError = '';
+    this.createStoreOk = '';
+    if (!this.newStoreName.trim() || !this.newStoreUsername.trim() || this.newStorePassword.length < 8) {
+      this.createStoreError = 'Completa nombre, usuario y una contraseña de al menos 8 caracteres.';
+      return;
+    }
+    this.productService
+      .createStore(this.newStoreName.trim(), this.newStoreUsername.trim(), this.newStorePassword)
+      .subscribe({
+        next: () => {
+          this.createStoreOk = 'Negocio creado correctamente.';
+          this.newStoreName = '';
+          this.newStoreUsername = '';
+          this.newStorePassword = '';
+          this.loadStores();
+        },
+        error: (err) => {
+          this.createStoreError = err?.error?.message || 'No se pudo crear el negocio.';
+        },
+      });
+  }
+
+  startEditStore(store: Store): void {
+    this.storeEditId = store.id;
+    this.storeEditColor = store.color || '';
+    this.storeEditWhatsapp = store.whatsapp_default || '';
+    this.storeEditPriority = store.priority == null ? '' : String(store.priority);
+    this.storeEditError = '';
+  }
+
+  cancelEditStore(): void {
+    this.storeEditId = null;
+  }
+
+  saveStoreSettings(): void {
+    if (!this.storeEditId) {
+      return;
+    }
+    this.storeEditError = '';
+    let priority: number | null = null;
+    if (this.storeEditPriority !== '' && this.storeEditPriority != null) {
+      const p = Number(this.storeEditPriority);
+      if (!Number.isInteger(p) || p < 1) {
+        this.storeEditError = 'La prioridad debe ser un número entero mayor o igual a 1.';
+        return;
+      }
+      priority = p;
+    }
+    this.productService
+      .updateStoreAdmin(this.storeEditId, {
+        color: this.storeEditColor,
+        whatsappDefault: this.storeEditWhatsapp,
+        priority,
+      })
+      .subscribe({
+        next: () => {
+          this.storeEditId = null;
+          this.loadStores();
+        },
+        error: (err) => {
+          this.storeEditError = err?.error?.message || 'No se pudieron guardar los cambios.';
+        },
+      });
+  }
+
+  toggleStoreClosed(store: Store): void {
+    this.productService.setStoreClosed(store.id, !store.is_closed).subscribe({
+      next: () => {
+        this.loadStores();
+      },
+    });
+  }
+
+  deleteStore(store: Store): void {
+    if (!confirm(`¿Eliminar el negocio "${store.name}" y todos sus productos? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    this.productService.deleteStore(store.id).subscribe({
+      next: () => {
+        this.loadStores();
+      },
+    });
+  }
+
+  async toggleStoreProducts(store: Store): Promise<void> {
+    if (this.showStoreProductsId === store.id) {
+      this.showStoreProductsId = null;
+      return;
+    }
+    if (!this.storeProductsCache[store.id]) {
+      try {
+        const products = await firstValueFrom(this.productService.getStoreProducts(store.id));
+        this.storeProductsCache[store.id] = products || [];
+      } catch {
+        this.storeProductsCache[store.id] = [];
+      }
+    }
+    this.showStoreProductsId = store.id;
+  }
+
+  storeProducts(store: Store): Product[] {
+    return this.storeProductsCache[store.id] || [];
+  }
+
+  // ===== FEEDBACK: REPORTE DE ERROR (público) =====
+  errorReportOpen = false;
+  errorName = '';
+  errorPhone = '';
+  errorMessage = '';
+  errorReportMsg = '';
+  errorReportError = '';
+
+  openErrorReport(): void {
+    this.errorName = '';
+    this.errorPhone = '';
+    this.errorMessage = '';
+    this.errorReportMsg = '';
+    this.errorReportError = '';
+    this.errorReportOpen = true;
+  }
+
+  closeErrorReport(): void {
+    this.errorReportOpen = false;
+  }
+
+  submitErrorReport(): void {
+    this.errorReportMsg = '';
+    this.errorReportError = '';
+    if (!this.errorName.trim()) {
+      this.errorReportError = 'El nombre es obligatorio.';
+      return;
+    }
+    if (!this.errorMessage.trim()) {
+      this.errorReportError = 'Escribe el error que encontraste.';
+      return;
+    }
+    this.productService
+      .createFeedback({
+        kind: 'error',
+        name: this.errorName.trim(),
+        phone: this.errorPhone.trim(),
+        message: this.errorMessage.trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.errorReportMsg = 'Gracias, tu reporte se envió al administrador.';
+          this.errorName = '';
+          this.errorPhone = '';
+          this.errorMessage = '';
+        },
+        error: (err) => {
+          this.errorReportError = err?.error?.message || 'No se pudo enviar el reporte.';
+        },
+      });
+  }
+
+  // ===== FEEDBACK: SUGERENCIAS / VALORACIONES (público) =====
+  approvedSuggestions: FeedbackPublic[] = [];
+  suggestionDetail: FeedbackPublic | null = null;
+  private suggestionTimer: any = null;
+  suggestionIndex = 0;
+  suggestionName = '';
+  suggestionPhone = '';
+  suggestionMessage = '';
+  suggestionMsg = '';
+  suggestionError = '';
+
+  loadApprovedSuggestions(): void {
+    this.productService.getApprovedSuggestions().subscribe({
+      next: (items) => {
+        this.approvedSuggestions = items || [];
+        if (this.suggestionIndex >= this.approvedSuggestions.length) {
+          this.suggestionIndex = 0;
+        }
+      },
+      error: () => {
+        this.approvedSuggestions = [];
+      },
+    });
+  }
+
+  get currentSuggestion(): FeedbackPublic | null {
+    if (!this.approvedSuggestions.length) {
+      return null;
+    }
+    const idx = ((this.suggestionIndex % this.approvedSuggestions.length) + this.approvedSuggestions.length) % this.approvedSuggestions.length;
+    return this.approvedSuggestions[idx];
+  }
+
+  setSuggestionIndex(i: number): void {
+    this.suggestionIndex = i;
+  }
+
+  startSuggestionRotation(): void {
+    if (this.suggestionTimer) {
+      return;
+    }
+    this.suggestionTimer = setInterval(() => {
+      if (this.approvedSuggestions.length > 1) {
+        this.suggestionIndex = (this.suggestionIndex + 1) % this.approvedSuggestions.length;
+      }
+    }, 5000);
+  }
+
+  stopSuggestionRotation(): void {
+    if (this.suggestionTimer) {
+      clearInterval(this.suggestionTimer);
+      this.suggestionTimer = null;
+    }
+  }
+
+  openSuggestionDetail(suggestion: FeedbackPublic): void {
+    this.suggestionDetail = suggestion;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeSuggestionDetail(): void {
+    this.suggestionDetail = null;
+    document.body.style.overflow = '';
+  }
+
+  submitSuggestion(): void {
+    this.suggestionMsg = '';
+    this.suggestionError = '';
+    if (!this.suggestionName.trim()) {
+      this.suggestionError = 'El nombre es obligatorio.';
+      return;
+    }
+    if (!this.suggestionMessage.trim()) {
+      this.suggestionError = 'Escribe tu sugerencia o valoración.';
+      return;
+    }
+    this.productService
+      .createFeedback({
+        kind: 'suggestion',
+        name: this.suggestionName.trim(),
+        phone: this.suggestionPhone.trim(),
+        message: this.suggestionMessage.trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.suggestionMsg = 'Gracias, tu sugerencia se envió para revisión.';
+          this.suggestionName = '';
+          this.suggestionPhone = '';
+          this.suggestionMessage = '';
+        },
+        error: (err) => {
+          this.suggestionError = err?.error?.message || 'No se pudo enviar tu sugerencia.';
+        },
+      });
+  }
+
+  // ===== FEEDBACK: BANDEJAS DE ADMIN (solo superadmin) =====
+  errorReports: Feedback[] = [];
+  suggestionReports: Feedback[] = [];
+
+  loadFeedbackAdmin(): void {
+    this.productService.getAdminErrors().subscribe({
+      next: (items) => {
+        this.errorReports = items || [];
+      },
+      error: () => {
+        this.errorReports = [];
+      },
+    });
+    this.productService.getAdminSuggestions().subscribe({
+      next: (items) => {
+        this.suggestionReports = items || [];
+      },
+      error: () => {
+        this.suggestionReports = [];
+      },
+    });
+  }
+
+  approveFeedback(item: Feedback): void {
+    this.productService.approveSuggestion(item.id, !item.approved).subscribe({
+      next: () => {
+        this.loadFeedbackAdmin();
+        this.loadApprovedSuggestions();
+      },
+    });
+  }
+
+  deleteFeedbackItem(item: Feedback): void {
+    if (!confirm('¿Eliminar este elemento de la bandeja?')) {
+      return;
+    }
+    this.productService.deleteFeedback(item.id).subscribe({
+      next: () => {
+        this.loadFeedbackAdmin();
+        this.loadApprovedSuggestions();
       },
     });
   }
