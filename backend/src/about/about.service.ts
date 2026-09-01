@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '../db';
 import { about } from './about.schema';
 import { sanitizeText } from '../security/sanitize';
 import { deleteImages } from '../security/uploads';
+import { v4 as uuidv4 } from 'uuid';
 
 const ABOUT_ID = 'about';
 
@@ -15,8 +16,18 @@ export interface AboutInfo {
 
 @Injectable()
 export class AboutService {
-  async getAbout(): Promise<AboutInfo> {
-    const rows = await db.select().from(about).where(eq(about.id, ABOUT_ID)).limit(1);
+  // storeId: null u omitido => about global (superadmin). storeId definido => about del negocio.
+  async getAbout(storeId?: string | null): Promise<AboutInfo> {
+    let rows;
+    if (storeId) {
+      rows = await db.select().from(about).where(eq(about.storeId, storeId)).limit(1);
+    } else {
+      rows = await db
+        .select()
+        .from(about)
+        .where(and(eq(about.id, ABOUT_ID), isNull(about.storeId)))
+        .limit(1);
+    }
     if (rows.length === 0) {
       return { content: '', updatedAt: '' };
     }
@@ -27,18 +38,51 @@ export class AboutService {
     };
   }
 
-  async updateAbout(content: string, imageUrl?: string): Promise<AboutInfo> {
+  async updateAbout(content: string, imageUrl?: string, storeId?: string | null): Promise<AboutInfo> {
     const cleanContent = sanitizeText(content, 10000);
     const updatedAt = new Date().toISOString();
-    const existing = await db.select().from(about).where(eq(about.id, ABOUT_ID)).limit(1);
+
+    let existing;
+    if (storeId) {
+      existing = await db.select().from(about).where(eq(about.storeId, storeId)).limit(1);
+    } else {
+      existing = await db
+        .select()
+        .from(about)
+        .where(and(eq(about.id, ABOUT_ID), isNull(about.storeId)))
+        .limit(1);
+    }
 
     const currentImageUrl = existing.length > 0 ? (existing[0] as any).imageUrl || '' : '';
     const nextImageUrl = imageUrl ?? currentImageUrl;
 
     if (existing.length === 0) {
-      await db.insert(about).values({ id: ABOUT_ID, content: cleanContent, updatedAt, imageUrl: nextImageUrl });
+      if (storeId) {
+        await db.insert(about).values({
+          id: uuidv4(),
+          content: cleanContent,
+          updatedAt,
+          imageUrl: nextImageUrl,
+          storeId,
+        } as any);
+      } else {
+        await db.insert(about).values({
+          id: ABOUT_ID,
+          content: cleanContent,
+          updatedAt,
+          imageUrl: nextImageUrl,
+          storeId: null,
+        } as any);
+      }
     } else {
-      await db.update(about).set({ content: cleanContent, updatedAt, imageUrl: nextImageUrl }).where(eq(about.id, ABOUT_ID));
+      if (storeId) {
+        await db.update(about).set({ content: cleanContent, updatedAt, imageUrl: nextImageUrl }).where(eq(about.storeId, storeId));
+      } else {
+        await db
+          .update(about)
+          .set({ content: cleanContent, updatedAt, imageUrl: nextImageUrl })
+          .where(and(eq(about.id, ABOUT_ID), isNull(about.storeId)));
+      }
     }
 
     // Elimina la foto anterior si se reemplazó

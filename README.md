@@ -18,20 +18,22 @@ Catálogo en línea de AdrianStore: tienda personal con productos seleccionados 
 AdrianStore/
 ├── backend/            # API NestJS
 │   ├── src/
-│   │   ├── auth/       # Login, JWT, guard de roles
-│   │   ├── product/    # CRUD de productos, subida de imágenes, enum de tipos/provincias/monedas
-│   │   ├── about/      # Sección "Sobre mí"
+│   │   ├── auth/       # Login, JWT, guard de roles + StoreOwnerGuard (owner)
+│   │   ├── product/    # CRUD de productos (admin y por negocio), subida de imágenes, enum de tipos/provincias/monedas
+│   │   ├── about/      # Sección "Sobre mí" (global y por negocio)
+│   │   ├── store/      # Negocios multitenant: CRUD, prioridad, cierre, credenciales, dueño
+│   │   ├── feedback/   # Reporte de errores y sugerencias/valoraciones con bandeja de moderación
 │   │   ├── users/      # Modelo de usuarios
 │   │   ├── security/   # Sanitización XSS, filtro multer, validación de origen
 │   │   ├── db.ts       # Conexión PostgreSQL/SQLite + creación automática de tablas
-│   │   ├── seeder.ts   # Productos de ejemplo
+│   │   ├── seeder.ts   # Productos de ejemplo y negocios de ejemplo
 │   │   ├── clean-db.ts # Vacía la base de datos (mantiene la estructura)
 │   │   └── setup-admin.ts  # Crea/actualiza el admin desde variables de entorno
 │   ├── .env.example    # Plantilla de configuración
 │   └── package.json
 ├── frontend/           # SPA Angular
 │   └── src/
-│       ├── app/        # Componente principal (catálogo, admin, filtros)
+│       ├── app/        # app-home + Router (stores-list, store-view, owner, root.component)
 │       ├── assets/     # logo.png + imágenes de fondo por categoría
 │       └── environments/ # environment.ts (dev) y environment.prod.ts (producción)
 ├── deploy/             # Kit de despliegue a producción
@@ -57,7 +59,23 @@ AdrianStore/
 - **Panel de administración**: crear, editar y eliminar productos; editar "Sobre mí".
 - **Categorías**: Tecnología, Ropa, Alimentos, Hogar, Electrodomésticos, Deportes y Otros.
 
+### Multitenant: Negocios
+
+- El **superadmin** crea negocios con sus credenciales (usuario + contraseña min. 8 caracteres). Cada negocio tiene su propio **panel de dueño** (`/tu-negocio`), color, WhatsApp default, "Sobre mí" propio, y puede cambiar usuario/contraseña.
+- Cada negocio crea sus **productos** con la etiqueta `negocio: <nombre>` (solo si el negocio está abierto) y el booleano `isPublic` (por defecto `true`): si es público sale en el catálogo general, si es privado solo se ve dentro del negocio.
+- **Orden del catálogo**: por prioridad numérica ascendente → superadmin (5) → sin prioridad (los más recientes al final).
+- El superadmin gestiona los negocios desde el panel: crear, editar color/WhatsApp/prioridad, **suspender/reabrir**, **eliminar** (destructivo, borra productos y "Sobre mí"), y ver detalles con el usuario de acceso.
+- Roles: `admin` (superadmin, tabla `users`) y `owner` (dueño, tabla `stores`). `StoreOwnerGuard` permite al `admin` y limita al dueño a su propio negocio (401/403 si toca lo ajeno).
+
+### Reporte de errores y sugerencias / valoraciones
+
+- **Reportar error** (botón en el navbar, accesible para cualquiera): solo texto, sin HTML ni imágenes. Campos: nombre (obligatorio) y teléfono (opcional). El reporte llega a la bandeja **"Errores reportados"** del panel admin.
+- **Sugerencias / Valoraciones** (sección al final del inicio): la persona deja nombre (obligatorio), teléfono (opcional) y su comentario. Llegan a la bandeja **"Sugerencias y valoraciones"** del admin, que decide si las **acepta** o no. Las aceptadas se muestran en el inicio en un carrusel que **rota cada 5 segundos**; al hacer click se abre la vista detallada. En el inicio solo se ve el comentario y el nombre (nunca el teléfono).
+- Todo el texto se **sanitiza en el backend** (se elimina cualquier HTML/script) antes de guardarse.
+
 ---
+
+
 
 ## Requisitos
 
@@ -103,7 +121,7 @@ Variables de entorno (`backend/.env`):
 | `THROTTLE_LIMIT` / `THROTTLE_TTL` | Límite global de peticiones por minuto | `20` / `60000` |
 | `LOGIN_THROTTLE_LIMIT` / `LOGIN_THROTTLE_TTL` | Límite de intentos de login | `5` / `60000` |
 
-> Las tablas (`products`, `users`, `about`) se crean automáticamente al arrancar.
+> Las tablas (`products`, `users`, `about`, `stores`, `feedback`) se crean automáticamente al arrancar.
 
 ### 2. Configurar el administrador
 
@@ -120,7 +138,7 @@ Esto crea o actualiza el administrador y elimina el usuario legado `admin123` si
 
 ```bash
 cd backend
-pnpm run seed           # inserta 4 productos de ejemplo
+pnpm run seed           # inserta ~20 productos y 3 negocios de ejemplo (cada uno con su dueño)
 pnpm run clean          # vacía la base de datos sin borrar la estructura
 ```
 
@@ -142,8 +160,8 @@ pnpm start              # http://localhost:4200
 | `pnpm run start:dev` | Ejecuta el backend en modo desarrollo         |
 | `pnpm run build`     | Compila a `dist/` (TypeScript)                |
 | `pnpm run test`      | Tests e2e (Jest + supertest, SQLite en memoria) |
-| `pnpm run seed`      | Inserta productos de ejemplo                  |
-| `pnpm run clean`     | Vacía productos, usuarios y "Sobre mí"        |
+| `pnpm run seed`      | Inserta productos y negocios de ejemplo        |
+| `pnpm run clean`     | Vacía productos, users y "Sobre mí" (no toca negocios ni feedback) |
 | `pnpm run setup:admin` | Crea/actualiza el admin desde el `.env`     |
 
 ### Frontend (`frontend/`)
@@ -192,17 +210,17 @@ Base: `http://localhost:3000/api` · Documentación Swagger en `/api/docs` (solo
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET`  | `/api/products` | Lista productos. `?type=tecnologia\|ropa\|alimentos\|hogar\|electrodomesticos\|deportes\|otros` |
+| `GET`  | `/api/products` | Lista productos. `?type=tecnologia\|ropa\|alimentos\|hogar\|electrodomesticos\|deportes\|otros`. Los de un negocio solo aparecen si el negocio está abierto y el producto es `isPublic` |
 | `GET`  | `/api/products/:id` | Obtiene un producto |
 | `GET`  | `/api/products/:id/whatsapp` | Enlace de WhatsApp con mensaje del producto |
 
-### Productos (solo admin)
+### Productos (solo superadmin / negocio)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST`   | `/api/products` | Crea un producto (`multipart/form-data`, imágenes opcionales) |
-| `PATCH`  | `/api/products/:id` | Actualiza un producto |
-| `DELETE` | `/api/products/:id` | Elimina un producto |
+| `POST`   | `/api/products` | Crea un producto (`multipart/form-data`, imágenes opcionales). Con `negocio: <nombre>` y `isPublic` si lo crea un dueño |
+| `PATCH`  | `/api/products/:id` | Actualiza un producto (admin o dueño del negocio) |
+| `DELETE` | `/api/products/:id` | Elimina un producto (admin o dueño del negocio) |
 
 ### Sobre mí
 
@@ -210,6 +228,33 @@ Base: `http://localhost:3000/api` · Documentación Swagger en `/api/docs` (solo
 |--------|------|-------------|
 | `GET` | `/api/about` | Contenido de "Sobre mí" |
 | `PUT` | `/api/about` | Actualiza "Sobre mí" (solo admin) |
+| `GET` | `/api/about/store/:slug` | "Sobre mí" de un negocio |
+| `PUT` | `/api/about/store/:slug` | Actualiza el "Sobre mí" de un negocio (admin o dueño) |
+
+### Negocios
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/stores` | Lista públicos de los negocios abiertos |
+| `GET` | `/api/stores/slug/:slug` | Detalle público de un negocio abierto |
+| `GET` | `/api/stores/admin` | Lista todos (incluye cerrados) — solo superadmin |
+| `POST` | `/api/stores` | Crea un negocio (usuario+contraseña min. 8, color, WhatsApp, prioridad) — solo superadmin |
+| `PATCH` | `/api/stores/:id` | Edita color/WhatsApp/prioridad/nombre — solo superadmin |
+| `PATCH` | `/api/stores/:id/closed` | Suspende/reabre un negocio (`{ closed: boolean }`) — solo superadmin |
+| `DELETE` | `/api/stores/:id` | Elimina un negocio (destructivo: borra productos y "Sobre mí") — solo superadmin |
+| `PUT` | `/api/stores/:id/me` | El dueño actualiza su propio negocio (envío de productos, WhatsApp, "Sobre mí") — admin o dueño |
+| `PATCH` | `/api/stores/:id/credentials` | El dueño cambia su usuario/contraseña — admin o dueño |
+
+### Reportes y sugerencias (feedback)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/feedback` | Envía un reporte/sugerencia (`{ type: 'error'\|'suggestion', name, phone?, comment }`); texto sanitizado |
+| `GET` | `/api/feedback/suggestions` | Sugerencias **aceptadas** y públicas (nunca expone el teléfono) |
+| `GET` | `/api/feedback/admin/errors` | Errores reportados — solo superadmin |
+| `GET` | `/api/feedback/admin/suggestions` | Sugerencias en bandeja (todas) — solo superadmin |
+| `PATCH` | `/api/feedback/:id/approve` | Acepta (`{ approved: true }`) o rechaza una sugerencia — solo superadmin |
+| `DELETE` | `/api/feedback/:id` | Elimina un reporte/sugerencia — solo superadmin |
 
 ---
 
@@ -308,11 +353,13 @@ docker run -p 3000:3000 --env-file backend/.env ghcr.io/adriflow/adrianstore-bac
 
 ## Autenticación y modo admin
 
-Solo existen dos roles, y no hay registro público: **`admin`** (un único usuario, provisto por variables de entorno) e **invitado** (cualquiera sin sesión). No hay endpoint para crear cuentas nuevas ni para asignar el rol admin a otro usuario desde la API.
+Solo existen dos roles con acceso autenticado, y no hay registro público del lado del superadmin: **`admin`** (un único usuario, provisto por variables de entorno) e **`owner`** (el dueño de un negocio, sus credenciales las crea el propio superadmin al crear el negocio). El resto son **invitados** (cualquiera sin sesión). No hay endpoint para que un invitado cree cuentas ni para asignar el rol admin a otro usuario desde la API.
 
 ### Modelo de usuario
 
 Tabla `users` (`backend/src/users/user.schema.ts`): `id` (uuid), `username`, `password_hash` (bcrypt, 10 rondas), `role` (string libre, pero solo `RolesGuard` reconoce `"admin"`). `UsersService` (`backend/src/users/users.service.ts`) solo expone `findByUsername` y `createUser` — no hay update de perfil, ni endpoint de "cambiar contraseña" para el propio usuario.
+
+Tabla `stores` (`backend/src/store/store.schema.ts`): `id` (uuid), `name`, `slug`, `username`/`password_hash` del dueño, `color`, `whatsapp`, `prioridad` (numérica), `closed` (boolean). `feedback` (`backend/src/feedback/feedback.schema.ts`): `type` (`error`/`suggestion`), `name`, `phone`, `comment`, `approved` (boolean) y marcas de tiempo. El `owner` inicia sesión con el mismo `POST /api/auth/login` (misma cookie), y su JWT lleva `storeId` y `role: 'owner'`.
 
 ### Cómo se crea/actualiza el admin
 
@@ -335,18 +382,23 @@ Solo puede haber un admin "oficial" por convención (un solo `ADMIN_USERNAME`), 
 
 ### Cómo se protegen las rutas
 
-Dos guards encadenados con `@UseGuards(JwtAuthGuard, RolesGuard)`:
+Tres guards:
 
-- **`JwtAuthGuard`** (`backend/src/auth/auth.guard.ts`) — envoltorio de Passport (`AuthGuard('jwt')`). Usa `JwtStrategy` (`backend/src/auth/jwt.strategy.ts`), que extrae el token primero de la cookie `jwt` y, si no está, de `Authorization: Bearer <token>`. Rechaza si el JWT es inválido, está corrompido, mal firmado o expiró (`ignoreExpiration: false`). Al pasar, deja `req.user = { sub, username, role }` (el payload del token, no relee la DB — si el rol de un usuario cambia en la DB, sus tokens ya emitidos siguen con el rol viejo hasta que expiren).
+- **`JwtAuthGuard`** (`backend/src/auth/auth.guard.ts`) — envoltorio de Passport (`AuthGuard('jwt')`). Usa `JwtStrategy` (`backend/src/auth/jwt.strategy.ts`), que extrae el token primero de la cookie `jwt` y, si no está, de `Authorization: Bearer <token>`. Rechaza si el JWT es inválido, está corrompido, mal firmado o expiró (`ignoreExpiration: false`). Al pasar, deja `req.user = { sub, username, role, storeId?, storeName? }` (el payload del token, no relee la DB — si el rol de un usuario cambia en la DB, sus tokens ya emitidos siguen con el rol viejo hasta que expiren).
 - **`RolesGuard`** (`backend/src/auth/roles.guard.ts`) — corre después, exige `req.user.role === 'admin'`; si no, `403 Forbidden`. Es un chequeo simple hardcodeado a `'admin'`, no hay decorador `@Roles(...)` genérico ni soporte multi-rol.
+- **`StoreOwnerGuard`** (`backend/src/auth/store-owner.guard.ts`) — para las rutas del dueño de un negocio: permite al `admin` siempre, y a un `owner` solo si `req.user.storeId === params.storeId`; si no, `403 Forbidden`.
 
 Aplicado en:
 
 | Endpoint | Guard |
 |----------|-------|
 | `GET /api/auth/me` | solo `JwtAuthGuard` (cualquier usuario autenticado, no exige admin) |
-| `POST/PATCH/DELETE /api/products` | `JwtAuthGuard` + `RolesGuard` |
+| `POST/PATCH/DELETE /api/products` | `JwtAuthGuard` + `RolesGuard` (admin) o `StoreOwnerGuard` (dueño de su negocio) |
 | `PUT /api/about` | `JwtAuthGuard` + `RolesGuard` |
+| `PUT /api/about/store/:slug` | `JwtAuthGuard` + `StoreOwnerGuard` (dueño del negocio o admin) |
+| `POST /api/stores` / `GET /api/stores/admin` / `PATCH|DELETE /api/stores/:id*` | `JwtAuthGuard` + `RolesGuard` (solo superadmin) |
+| `PUT /api/stores/:id/me` / `PATCH /api/stores/:id/credentials` | `JwtAuthGuard` + `StoreOwnerGuard` (solo admin o el dueño de ese negocio) |
+| `GET/DELETE /api/feedback/admin/*` / `PATCH /api/feedback/:id/approve` | `JwtAuthGuard` + `RolesGuard` (solo superadmin) |
 
 No hay refresh token ni renovación silenciosa: a la hora, el usuario tiene que volver a loguearse. Tampoco hay revocación server-side (blocklist/versión de token) — un JWT robado sigue siendo válido hasta que expira, aunque se llame a `/logout` (que solo borra la cookie del navegador que la pidió).
 
@@ -358,10 +410,11 @@ No hay refresh token ni renovación silenciosa: a la hora, el usuario tiene que 
 
 `originGuard` (`backend/src/security/origin.middleware.ts`) corre en todas las peticiones `POST/PUT/PATCH/DELETE`: si el header `Origin` (o, en su defecto, `Referer`) no coincide con `FRONTEND_URL`, responde `403` antes de llegar a ningún controller/guard. Es la defensa contra CSRF (la cookie `jwt` no tiene `SameSite=strict`, así que esto no es opcional).
 
-### Modo admin en el frontend
+### Modo admin y dueño en el frontend
 
-No hay routing de Angular ni guard de ruta: es una sola página (`app.component.ts`) con un flag `isAdmin: boolean` y una vista `activeView`. Nada carga código de admin por separado; el HTML del panel simplemente no se muestra (`*ngIf`-style) cuando `isAdmin` es `false`. Esto es solo UX — la seguridad real la hacen los guards del backend, no este flag.
+El frontend ahora usa **routing de Angular** (`RouterModule`): `app-routing.module.ts` define las rutas (inicio `''` (AppComponent/root), `negocios`, `negocio/:slug`, `tu-negocio`, además de un `app.component.ts` raíz con el login/panel del superadmin). Los componentes de admin/dueño no cargan código separado por rol; se muestran/ocultan según el estado de sesión.
 
+Modo superadmin (en `app.component.ts`):
 - Al iniciar (`ngOnInit`), llama `GET /api/auth/me` con `withCredentials: true`; si la cookie `jwt` es válida y `role === 'admin'`, pone `isAdmin = true` y `activeView = 'admin'`. Si no hay cookie o expiró, queda como invitado sin mostrar error.
 - El formulario de login vive siempre en la vista "admin" (`selectView('admin')` la muestra a cualquiera; solo cambia si loguea con éxito).
 - `loginAdmin()` llama `POST /api/auth/login` con `withCredentials: true`; el navegador guarda la cookie `HttpOnly` sola, el frontend nunca toca el JWT ni lo guarda en `localStorage`/`sessionStorage`.

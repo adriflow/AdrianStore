@@ -1,0 +1,294 @@
+<div class="flex min-h-screen flex-col bg-cream text-neutral-800">
+  <header class="sticky top-0 z-50 border-b border-neutral-900/5 bg-white/80 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" (click)="goHome()" class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="Logo AdrianStore" class="h-9 w-9 rounded-xl object-contain" />
+        <span class="text-left">
+          <span class="block font-display text-base font-bold leading-tight text-neutral-900">AdrianStore</span>
+          <span class="block text-[11px] leading-tight text-neutral-400">Catálogo en línea</span>
+        </span>
+      </button>
+      <div class="flex items-center gap-3">
+        <a routerLink="/" class="rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-semibold text-neutral-600 transition hover:border-leaf-300 hover:text-leaf-700">Inicio</a>
+        <a routerLink="/negocios" class="rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-semibold text-neutral-600 transition hover:border-leaf-300 hover:text-leaf-700">Negocios</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
+    <div *ngIf="isLoading" class="py-24 text-center text-neutral-400">Cargando negocio...</div>
+
+    <div *ngIf="notFound" class="mx-auto max-w-md py-24 text-center">
+      <p class="font-display text-2xl font-bold text-neutral-900">Negocio no disponible</p>
+      <p class="mt-2 text-sm text-neutral-500">Este negocio no existe o está cerrado por el momento.</p>
+      <button type="button" (click)="goStores()" class="mt-6 rounded-full bg-leaf-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-leaf-700">Ver otros negocios</button>
+    </div>
+
+    <ng-container *ngIf="store && !isLoading && !notFound">
+      <!-- Encabezado del negocio -->
+      <div class="relative overflow-hidden rounded-[2.5rem] border border-neutral-900/5 bg-white shadow-soft">
+        <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div class="absolute -right-[10%] -top-[20%] aspect-square w-[55%] max-w-[26rem] rounded-full opacity-25 blur-3xl" [style.background-color]="accent"></div>
+          <div class="absolute -left-[12%] bottom-[-30%] aspect-square w-[40%] max-w-[20rem] rounded-full opacity-20 blur-3xl" [style.background-color]="accent"></div>
+        </div>
+        <div class="relative flex flex-col gap-8 p-8 sm:p-10 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center gap-5">
+            <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl font-display text-3xl font-bold text-white shadow-lift" [style.background-color]="accent">
+              {{ store.name.charAt(0).toUpperCase() }}
+            </span>
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-widest" [style.color]="accent">Negocio</span>
+              <h1 class="mt-1 font-display text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">{{ store.name }}</h1>
+              <p class="mt-2 flex items-center gap-2 text-sm text-neutral-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-[#25D366]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                Compra directa por WhatsApp en {{ store.name }}
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <a
+              [href]="'https://wa.me/' + storePhone"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lift transition hover:opacity-90"
+              [style.background-color]="accent"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+              Escribir al negocio
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="reveal reveal-in mt-8 flex items-center gap-2">
+        <button
+          type="button"
+          (click)="activeTab = 'productos'"
+          class="rounded-full px-5 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-600]="activeTab === 'productos'"
+          [class.text-white]="activeTab === 'productos'"
+          [class.bg-white]="activeTab !== 'productos'"
+          [class.text-neutral-600]="activeTab !== 'productos'"
+          [class.border]="activeTab !== 'productos'"
+          [class.border-neutral-200]="activeTab !== 'productos'"
+        >
+          Productos ({{ products.length }})
+        </button>
+        <button
+          type="button"
+          (click)="activeTab = 'sobre-mi'"
+          class="rounded-full px-5 py-2 text-sm font-semibold transition"
+          [class.bg-leaf-600]="activeTab === 'sobre-mi'"
+          [class.text-white]="activeTab === 'sobre-mi'"
+          [class.bg-white]="activeTab !== 'sobre-mi'"
+          [class.text-neutral-600]="activeTab !== 'sobre-mi'"
+          [class.border]="activeTab !== 'sobre-mi'"
+          [class.border-neutral-200]="activeTab !== 'sobre-mi'"
+        >
+          Sobre mí
+        </button>
+      </div>
+
+      <!-- Productos -->
+      <section *ngIf="activeTab === 'productos'" class="mt-8">
+        <div class="reveal reveal-in flex flex-wrap items-center gap-3">
+          <div class="relative min-w-[16rem] flex-1">
+            <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            </span>
+            <input
+              type="search"
+              [(ngModel)]="searchTerm"
+              placeholder="Buscar producto por nombre..."
+              class="w-full rounded-full border border-neutral-200 bg-white py-2.5 pl-11 pr-11 text-sm text-neutral-900 shadow-soft outline-none transition placeholder:text-neutral-400 focus:border-leaf-400 focus:ring-2 focus:ring-leaf-200"
+            />
+            <button
+              *ngIf="searchTerm"
+              type="button"
+              (click)="clearSearch()"
+              aria-label="Limpiar búsqueda"
+              class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+            </button>
+          </div>
+          <button
+            *ngIf="hasCategories"
+            type="button"
+            (click)="selectCategory('all')"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition"
+            [class.bg-leaf-600]="selectedCategory === 'all'"
+            [class.text-white]="selectedCategory === 'all'"
+            [class.border-leaf-600]="selectedCategory === 'all'"
+            [class.bg-white]="selectedCategory !== 'all'"
+            [class.text-neutral-600]="selectedCategory !== 'all'"
+            [class.border-neutral-200]="selectedCategory !== 'all'"
+          >
+            Todos
+          </button>
+          <button
+            *ngFor="let category of selectableCategories"
+            type="button"
+            (click)="selectCategory(category.value)"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition"
+            [class.bg-leaf-600]="selectedCategory === category.value"
+            [class.text-white]="selectedCategory === category.value"
+            [class.border-leaf-600]="selectedCategory === category.value"
+            [class.bg-white]="selectedCategory !== category.value"
+            [class.text-neutral-600]="selectedCategory !== category.value"
+            [class.border-neutral-200]="selectedCategory !== category.value"
+          >
+            {{ category.label }}
+          </button>
+        </div>
+
+        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <article
+            *ngFor="let product of filteredProducts"
+            class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-900/5 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift"
+          >
+            <button
+              type="button"
+              (click)="openLightbox(product)"
+              class="relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-neutral-100 text-left"
+            >
+              <div class="relative h-full w-full">
+                <div *ngIf="productImages(product).length" class="flex h-full w-full transition-transform duration-500 ease-in-out" [style.transform]="'translateX(-' + (photoIndex(product) * 100) + '%)'">
+                  <img *ngFor="let img of productImages(product)" [src]="img" [alt]="product.name" class="h-full w-full shrink-0 object-contain p-3" />
+                </div>
+                <div *ngIf="!productImages(product).length" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-leaf-100 to-leaf-50 text-leaf-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-10 w-10"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </div>
+              </div>
+              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-700 backdrop-blur">{{ product.type | titlecase }}</span>
+            </button>
+            <div *ngIf="productImages(product).length > 1" class="flex justify-center gap-1.5 pt-3">
+              <button
+                *ngFor="let img of productImages(product); let i = index"
+                type="button"
+                (click)="setPhotoIndex(product, i)"
+                [attr.aria-label]="'Ver imagen ' + (i + 1)"
+                class="h-1.5 rounded-full transition-all duration-300"
+                [class.w-1.5]="i !== photoIndex(product)"
+                [class.w-5]="i === photoIndex(product)"
+                [class.bg-leaf-600]="i === photoIndex(product)"
+                [class.bg-neutral-300]="i !== photoIndex(product)"
+              ></button>
+            </div>
+            <div class="flex flex-1 flex-col gap-3 p-5">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="font-display text-lg font-semibold text-neutral-900">{{ product.name }}</h3>
+                <span class="whitespace-nowrap font-display text-lg font-bold" [style.color]="accent">{{ formatPrice(product) }}</span>
+              </div>
+              <p class="flex-1 text-sm leading-relaxed text-neutral-500 line-clamp-2">{{ product.description }}</p>
+              <div class="pt-1">
+                <a
+                  [href]="whatsappLink(product)"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                  [style.background-color]="accent"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                  Pedir por WhatsApp
+                </a>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div *ngIf="!isLoading && filteredProducts.length === 0" class="py-16 text-center">
+          <p class="font-display text-xl text-neutral-600">{{ searchTerm.trim() ? 'No hay resultados para "' + searchTerm.trim() + '"' : 'Este negocio aún no tiene productos.' }}</p>
+        </div>
+      </section>
+
+      <!-- Sobre mí del negocio -->
+      <section *ngIf="activeTab === 'sobre-mi'" class="reveal reveal-in mt-8 max-w-4xl">
+        <div class="rounded-[2rem] border border-neutral-900/5 bg-white p-8 shadow-soft sm:p-12">
+          <div *ngIf="about.imageUrl" class="mx-auto mb-8 aspect-square w-[58%] max-w-[10rem] overflow-hidden rounded-full border-4 shadow-soft" [style.border-color]="accent + '33'">
+            <img [src]="about.imageUrl" [alt]="store.name" class="h-full w-full object-cover" />
+          </div>
+          <p class="whitespace-pre-wrap text-lg leading-relaxed text-neutral-600">{{ about.content || 'Este negocio aún no ha compartido un texto de presentación.' }}</p>
+          <p *ngIf="about.updatedAt" class="mt-6 text-sm text-neutral-400">Actualizado el {{ about.updatedAt | date: 'longDate' }}</p>
+        </div>
+      </section>
+    </ng-container>
+  </main>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <div *ngIf="lightboxProduct" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-4" (click)="closeLightbox()">
+    <div class="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-neutral-900 shadow-lift md:max-h-[88vh] md:flex-row" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        (click)="closeLightbox()"
+        aria-label="Cerrar vista previa"
+        class="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white ring-1 ring-white/25 transition hover:bg-black/80"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+
+      <div class="relative flex h-[38vh] shrink-0 items-center justify-center bg-neutral-950 md:h-auto md:w-[55%]">
+        <img [src]="productImages(lightboxProduct)[lightboxIndex]" [alt]="lightboxProduct.name" class="max-h-full max-w-full object-contain" />
+
+        <button
+          *ngIf="productImages(lightboxProduct).length > 1"
+          type="button"
+          (click)="prevLightboxImage()"
+          aria-label="Imagen anterior"
+          class="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button
+          *ngIf="productImages(lightboxProduct).length > 1"
+          type="button"
+          (click)="nextLightboxImage()"
+          aria-label="Imagen siguiente"
+          class="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <div class="flex min-h-0 flex-1 flex-col gap-4 p-6">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-leaf-300">{{ lightboxProduct.type | titlecase }}<span *ngIf="lightboxProduct.province"> · {{ lightboxProduct.province }}</span></span>
+          <h3 class="mt-1.5 font-display text-2xl font-bold leading-tight text-white">{{ lightboxProduct.name }}</h3>
+          <p class="mt-1.5 font-display text-lg font-semibold text-leaf-300">{{ formatPrice(lightboxProduct) }}</p>
+        </div>
+
+        <div class="flex min-h-24 flex-1 flex-col">
+          <p class="text-xs font-semibold uppercase tracking-widest text-neutral-500">Descripción</p>
+          <div class="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
+            <p class="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">{{ lightboxProduct.description || 'Este producto no tiene descripción.' }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="productImages(lightboxProduct).length > 1" class="flex gap-2 overflow-x-auto pb-1">
+          <img
+            *ngFor="let img of productImages(lightboxProduct); let i = index"
+            [src]="img"
+            [alt]="lightboxProduct.name + ' ' + (i + 1)"
+            (click)="lightboxIndex = i"
+            class="h-14 w-14 shrink-0 cursor-pointer rounded-xl border-2 object-cover transition"
+            [class.border-leaf-400]="i === lightboxIndex"
+            [class.border-transparent]="i !== lightboxIndex"
+            [class.opacity-50]="i !== lightboxIndex"
+          />
+        </div>
+
+        <a [href]="whatsappLink(lightboxProduct)" target="_blank" rel="noreferrer" class="inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90" [style.background-color]="accent">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          Pedir por WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="border-t border-neutral-900/5 bg-white">
+    <div class="mx-auto max-w-7xl px-4 py-10 text-center text-sm text-neutral-400 sm:px-6 lg:px-8">
+      © {{ currentYear }} AdrianStore · {{ store ? store.name : '' }} · Todos los derechos reservados.
+    </div>
+  </footer>
+</div>

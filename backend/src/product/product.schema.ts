@@ -34,6 +34,8 @@ export const products = useSqlite
       acceptsTransfer: sqliteInteger('accepts_transfer', { mode: 'boolean' }).default(true).notNull(),
       imageUrls: sqliteText('image_urls').default('[]').notNull(),
       province: sqliteText('province').default('Camagüey').notNull(),
+      storeId: sqliteText('store_id'),
+      isPublic: sqliteInteger('is_public', { mode: 'boolean' }).default(true).notNull(),
     })
   : pgTable('products', {
       id: pgVarchar('id').primaryKey(),
@@ -47,4 +49,6 @@ export const products = useSqlite
       acceptsTransfer: pgBoolean('accepts_transfer').default(true).notNull(),
       imageUrls: pgText('image_urls').default('[]').notNull(),
       province: pgVarchar('province', { length: 50 }).default('Camagüey').notNull(),
+      storeId: pgVarchar('store_id'),
+      isPublic: pgBoolean('is_public').default(true).notNull(),
     });

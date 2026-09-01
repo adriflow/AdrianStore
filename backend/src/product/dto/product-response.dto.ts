@@ -36,4 +36,13 @@ export class ProductResponseDto {
 
   @ApiProperty({ enum: ProvinceType, example: ProvinceType.CAMAGUEY })
   province!: ProvinceType;
+
+  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'Id del negocio al que pertenece (null = producto del superadmin)' })
+  storeId?: string;
+
+  @ApiPropertyOptional({ example: 'Tienda Mario', description: 'Nombre del negocio (etiqueta de origen)' })
+  storeName?: string;
+
+  @ApiProperty({ example: true, description: 'Si es público sale en el catálogo; si no, solo en su negocio' })
+  isPublic!: boolean;
 }
